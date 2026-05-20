@@ -45,14 +45,20 @@ public class RateLimiterAspect {
         this.limitScript = limitScript;
     }
 
+    //@annotation(rateLimiter)是切入点表达式
+    //@annotation() 表示匹配带有指定注解的方法，rateLimiter 是方法参数中定义的变量名，对应某个注解类型
     @Before("@annotation(rateLimiter)")
     public void doBefore(JoinPoint point, RateLimiter rateLimiter) throws Throwable {
+        //拿到限流时间和次数
         int time = rateLimiter.time();
         int count = rateLimiter.count();
 
+        //拿到限流key
         String combineKey = getCombineKey(rateLimiter, point);
+        //创建一个只包含单个元素 combineKey 的不可变列表。
         List<Object> keys = Collections.singletonList(combineKey);
         try {
+            //redisTemplate.execute() 方法签名要求传入一个 key 的列表
             Long number = redisTemplate.execute(limitScript, keys, count, time);
             if (StringUtils.isNull(number) || number.intValue() > count) {
                 throw new ServiceException("访问过于频繁，请稍候再试");
@@ -66,13 +72,17 @@ public class RateLimiterAspect {
     }
 
     public String getCombineKey(RateLimiter rateLimiter, JoinPoint point) {
+        // 1. 从注解获取基础 key（如 "rate_limit:login"）
         StringBuffer stringBuffer = new StringBuffer(rateLimiter.key());
+        // 2. 如果是 IP 限流类型，追加 IP 地址
         if (rateLimiter.limitType() == LimitType.IP) {
             stringBuffer.append(IpUtils.getIpAddr(ServletUtils.getRequest())).append("-");
         }
+        // 3. 获取目标类名和方法名
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
         Class<?> targetClass = method.getDeclaringClass();
+        // 4. 拼接完整 key
         stringBuffer.append(targetClass.getName()).append("-").append(method.getName());
         return stringBuffer.toString();
     }

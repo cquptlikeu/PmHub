@@ -342,6 +342,7 @@
                 <version>${laigeoffer.version}</version>
             </dependency>
 
+
             <!-- knife4j -->
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>

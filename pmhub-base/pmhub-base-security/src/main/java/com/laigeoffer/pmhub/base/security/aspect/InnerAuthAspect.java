@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class InnerAuthAspect implements Ordered {
+    //@Around - 环绕通知，可以在目标方法执行前和执行后都进行处理
+    //匹配所有被 @InnerAuth 注解标注的方法
     @Around("@annotation(innerAuth)")
     public Object innerAround(ProceedingJoinPoint point, InnerAuth innerAuth) throws Throwable {
         String source = ServletUtils.getRequest().getHeader(SecurityConstants.FROM_SOURCE);
@@ -27,6 +29,7 @@ public class InnerAuthAspect implements Ordered {
             throw new InnerAuthException("没有内部访问权限，不允许访问");
         }
 
+        //从 HTTP 请求头中获取 user_id 和 username 信息
         String userid = ServletUtils.getRequest().getHeader(SecurityConstants.DETAILS_USER_ID);
         String username = ServletUtils.getRequest().getHeader(SecurityConstants.DETAILS_USERNAME);
         // 用户信息验证

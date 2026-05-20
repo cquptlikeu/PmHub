@@ -5,7 +5,7 @@ server:
 # Spring
 spring: 
   application:
-    # 应用名称
+    # 应用名称，在 Nacos 注册中心注册时使用这个名字，其他微服务通过这个名字找到网关服务，Nacos 中通过这个名称管理配置文件
     name: pmhub-gateway
   profiles:
     # 环境配置
@@ -14,17 +14,19 @@ spring:
     nacos:
       discovery:
         # 服务注册地址
-        server-addr: 127.0.0.1:8848
+        server-addr: 192.168.100.128:8848
         username: nacos
         password: nacos
       config:
         # 配置中心地址
-        server-addr: 127.0.0.1:8848
+        server-addr: 192.168.100.128:8848
         username: nacos
         password: nacos
         # 配置文件格式
         file-extension: yml
-        # 共享配置
+        # 共享配置，加载多个共享的配置文件，这些配置会被应用到当前服务的配置环境中。
+        # 配置会优先加载，优先级低于服务自身的配置，但高于默认配置
+        # 支持环境隔离，通过 profiles.active 可以加载不同环境的配置
         shared-configs:
           - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
     sentinel:
@@ -32,14 +34,14 @@ spring:
       eager: true
       transport:
         # 配置控制台服务地址
-        dashboard: 127.0.0.1:8080
+        dashboard: 192.168.100.128:8088
         # 默认 8719 端口，假如被占用会自动从 8719 开始依次 +1 扫描,直至找到未被占用的端口
         port: 8719
       # nacos配置持久化
       datasource:
         ds1:
           nacos:
-            server-addr: 127.0.0.1:8848
+            server-addr: 192.168.100.128:8848
             dataId: sentinel-pmhub-gateway
             groupId: DEFAULT_GROUP
             data-type: json

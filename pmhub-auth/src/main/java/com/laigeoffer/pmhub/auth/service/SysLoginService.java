@@ -19,6 +19,8 @@ import com.laigeoffer.pmhub.base.security.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
+
 /**
  * 登录校验方法
  *
@@ -26,7 +28,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SysLoginService {
-    @Autowired
+    @Resource
     private UserFeignService userFeignService;
 
     @Autowired
@@ -59,13 +61,13 @@ public class SysLoginService {
             recordLogService.recordLogininfor(username, Constants.LOGIN_FAIL, "用户名不在指定范围");
             throw new ServiceException("用户名不在指定范围");
         }
-        // IP黑名单校验
+        // IP黑名单校验，将redis中存的黑名单读取出来，转成字符串
         String blackStr = Convert.toStr(redisService.getCacheObject(CacheConstants.SYS_LOGIN_BLACKIPLIST));
         if (IpUtils.isMatchedIp(blackStr, IpUtils.getIpAddr())) {
             recordLogService.recordLogininfor(username, Constants.LOGIN_FAIL, "很遗憾，访问IP已被列入系统黑名单");
             throw new ServiceException("很遗憾，访问IP已被列入系统黑名单");
         }
-        // 查询用户信息
+        // 利用feign去调用 pmhub-system 服务的用户查询接口，查询用户信息
         R<LoginUser> userResult = userFeignService.info(username, SecurityConstants.INNER);
 
         if (StringUtils.isNull(userResult) || StringUtils.isNull(userResult.getData())) {
@@ -73,6 +75,7 @@ public class SysLoginService {
             throw new ServiceException("登录用户：" + username + " 不存在");
         }
 
+        //检查feign远程调用返回的对象的状态码是否为失败
         if (R.FAIL == userResult.getCode()) {
             throw new ServiceException(userResult.getMsg());
         }

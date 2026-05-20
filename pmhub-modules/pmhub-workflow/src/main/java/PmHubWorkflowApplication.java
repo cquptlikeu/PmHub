@@ -1,5 +1,3 @@
-package com.laigeoffer.pmhub.workflow;
-
 import com.laigeoffer.pmhub.base.security.annotation.EnableCustomConfig;
 import com.laigeoffer.pmhub.base.security.annotation.EnableDistributedLock;
 import com.laigeoffer.pmhub.base.security.annotation.EnablePmFeignClients;

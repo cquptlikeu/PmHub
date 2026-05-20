@@ -267,7 +267,12 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.procInsId;
+      // const ids = row.procInsId;
+      console.log("删除流程实例 row =", row);
+
+      const ids = row.procInsId || row.instanceId || row.id;
+
+      console.log("删除流程实例 id =", ids);
       this.$confirm('是否确认删除流程定义编号为"' + ids + '"的数据项?', "警告", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",

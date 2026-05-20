@@ -1,8 +1,10 @@
 package com.laigeoffer.pmhub.workflow.mapper;
 
+import com.laigeoffer.pmhub.base.core.annotation.DataSource;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.SysDept;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.SysRole;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.SysUser;
+import com.laigeoffer.pmhub.base.core.enums.DataSourceType;
 import com.laigeoffer.pmhub.base.core.mapper.BaseMapperPlus;
 import com.laigeoffer.pmhub.workflow.domain.WfCopy;
 import com.laigeoffer.pmhub.workflow.domain.vo.WfCopyVo;
@@ -18,6 +20,7 @@ import java.util.List;
  * @date 2022-05-19
  */
 @Mapper
+//@DataSource(DataSourceType.SYSTEM)
 public interface WfCopyMapper extends BaseMapperPlus<WfCopyMapper, WfCopy, WfCopyVo> {
 
     SysUser selectUserById(@Param("userId") Long userId);

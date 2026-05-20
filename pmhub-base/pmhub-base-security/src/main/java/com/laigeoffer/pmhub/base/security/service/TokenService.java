@@ -125,6 +125,7 @@ public class TokenService {
         if (StringUtils.isNotNull(loginUser) && StringUtils.isNotEmpty(loginUser.getToken())) {
             refreshToken(loginUser);
         }
+
     }
 
     /**
@@ -156,6 +157,7 @@ public class TokenService {
         claimsMap.put(SecurityConstants.USER_KEY, token);
         claimsMap.put(SecurityConstants.DETAILS_USER_ID, userId);
         claimsMap.put(SecurityConstants.DETAILS_USERNAME, userName);
+        //注意这里是没有设置过期时间的，我们是由redis来实际控制过期时间的。
 
         // 接口返回信息
         return JwtUtils.createToken(claimsMap);

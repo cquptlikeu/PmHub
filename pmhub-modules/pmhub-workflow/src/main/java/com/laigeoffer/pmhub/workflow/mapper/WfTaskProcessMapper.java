@@ -1,7 +1,9 @@
 package com.laigeoffer.pmhub.workflow.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.laigeoffer.pmhub.base.core.annotation.DataSource;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.WfTaskProcess;
+import com.laigeoffer.pmhub.base.core.enums.DataSourceType;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -10,6 +12,7 @@ import org.apache.ibatis.annotations.Param;
  * @date 2023-02-28 10:10
  */
 @Mapper
+//@DataSource(DataSourceType.PROJECT)
 public interface WfTaskProcessMapper extends BaseMapper<WfTaskProcess> {
     Integer selectStatusByTaskId(@Param("taskId") String taskId);
     Integer selectStatusByTaskId2(@Param("taskId") String taskId);

@@ -22,6 +22,10 @@
             <groupId>com.laigeoffer.pmhub</groupId>
             <artifactId>pmhub-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.laigeoffer.pmhub</groupId>
+            <artifactId>pmhub-framework</artifactId>
+        </dependency>
 
     </dependencies>
 

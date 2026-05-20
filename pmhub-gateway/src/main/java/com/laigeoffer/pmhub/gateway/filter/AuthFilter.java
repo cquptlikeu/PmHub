@@ -27,11 +27,14 @@ import java.util.Map;
 
 /**
  * 网关鉴权
- *
+ * 实现了GlobalFilter, Ordered是全局过滤器，作用于全部路由
+ * order是用来指定过滤器的执行顺序，数字越小，优先级越高。
  * @author canghe
  */
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
+    //创建一个日志记录器（Logger），用于在 AuthFilter 类中记录日志信息。
+    //LoggerFactory.getLogger(AuthFilter.class) 是 SLF4J 的静态工厂方法，用于获取与 AuthFilter 类关联的 Logger 实例
     private static final Logger log = LoggerFactory.getLogger(AuthFilter.class);
 
     private static final String BEGIN_VISIT_TIME = "begin_visit_time";//开始访问时间
@@ -43,50 +46,60 @@ public class AuthFilter implements GlobalFilter, Ordered {
     @Autowired
     private RedisService redisService;
 
-
+    //exchange：WebFlux核心对象，包含请求和响应信息，可以获取请求属性、修改请求/响应等
+    //chain：网关过滤器链，用于调用下一个过滤器
+    //登录之前走的
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        //创建请求构建器（用于后续修改请求头）
         ServerHttpRequest.Builder mutate = request.mutate();
-
+        //提取请求路径
         String url = request.getURI().getPath();
-        // 跳过不需要验证的路径
+        // 进行白名单校验，跳过不需要验证的路径
         if (StringUtils.matches(url, ignoreWhite.getWhites())) {
+            //直接放行，继续执行下一个过滤器
             return chain.filter(exchange);
         }
         String token = getToken(request);
         if (StringUtils.isEmpty(token)) {
             return unauthorizedResponse(exchange, "令牌不能为空");
         }
+        // 解析 JWT Token，获取 claims
+        //Claims 是 JWT 中的声明（载荷）对象，包含了 token 中存储的所有用户信息和元数据。
         Claims claims = JwtUtils.parseToken(token);
         if (claims == null) {
             return unauthorizedResponse(exchange, "令牌已过期或验证不正确！");
         }
+        //检查 Redis 中是否存在该 Token，验证登录状态
         String userkey = JwtUtils.getUserKey(claims);
         boolean islogin = redisService.hasKey(getTokenKey(userkey));
         if (!islogin) {
             return unauthorizedResponse(exchange, "登录状态已过期");
         }
+        //提取用户 ID 和用户名
         String userid = JwtUtils.getUserId(claims);
         String username = JwtUtils.getUserName(claims);
         if (StringUtils.isEmpty(userid) || StringUtils.isEmpty(username)) {
             return unauthorizedResponse(exchange, "令牌验证失败");
         }
 
-        // 设置用户信息到请求
+        // 将用户信息注入到请求头（传递给下游）
+        //mutate请求构建器（用于修改请求头）
         addHeader(mutate, SecurityConstants.USER_KEY, userkey);
         addHeader(mutate, SecurityConstants.DETAILS_USER_ID, userid);
         addHeader(mutate, SecurityConstants.DETAILS_USERNAME, username);
-        // 内部请求来源参数清除（防止网关携带内部请求标识，造成系统安全风险）
+        // 内部请求来源参数清除（防止网关携带内部请求标识，造成系统安全风险，以防止外部用户伪造内部请求，提升系统安全性。）
         removeHeader(mutate, SecurityConstants.FROM_SOURCE);
 
         //先记录下访问接口的开始时间
+        //getAttributes() 一个 Map 集合，网关的设计允许我们在不同的过滤器之间，通过这个Map 集合来临时存放和传递自定义数据。
         exchange.getAttributes().put(BEGIN_VISIT_TIME, System.currentTimeMillis());
 
 //        return chain.filter(exchange.mutate().request(mutate.build()).build());
 
         // Mono.fromRunnable 是非阻塞的，适合在 then 中处理后续的日志逻辑。
-        return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+        return chain.filter(exchange).then(Mono.fromRunnable(() -> {   //使用注册回调的方式通知线程接口调用已经完成了，接着干未完成的日志记录。
             try {
                 // 记录接口访问日志
                 Long beginVisitTime = exchange.getAttribute(BEGIN_VISIT_TIME);
@@ -113,6 +126,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
             return;
         }
         String valueStr = value.toString();
+        //这里需要编码的原因是用户名包含特殊字符：如中文、空格、@、#、&、= 等
+        //如果不编码的话会导致请求头解析失败，数据被截断，下游服务接收到的值不正确
         String valueEncode = ServletUtils.urlEncode(valueStr);
         mutate.header(name, valueEncode);
     }
@@ -137,6 +152,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
      * 获取请求token
      */
     private String getToken(ServerHttpRequest request) {
+        //从请求头中获取指定名称的第一个值
         String token = request.getHeaders().getFirst(TokenConstants.AUTHENTICATION);
         // 如果前端设置了令牌前缀，则裁剪掉前缀
         if (StringUtils.isNotEmpty(token) && token.startsWith(TokenConstants.PREFIX)) {

@@ -64,6 +64,7 @@ import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.task.api.history.HistoricTaskInstanceQuery;
 import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -618,7 +619,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @return
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    //@Transactional(rollbackFor = Exception.class)
     public void startProcessByDefId(String procDefId, Map<String, Object> variables) {
         try {
             ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
@@ -1360,6 +1361,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         }
     }
 
+    @Autowired
+    private WorkflowSystemService workflowSystemService;
+
     /**
      * 获取历史任务信息列表
      */
@@ -1393,7 +1397,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (BpmnXMLConstants.ELEMENT_EVENT_START.equals(activityInstance.getActivityType())) {
                 if (ObjectUtil.isNotNull(historicProcessInstance)) {
                     Long userId = Long.parseLong(historicProcessInstance.getStartUserId());
-                    SysUser user = wfCopyMapper.selectUserById(userId);
+                    SysUser user = workflowSystemService.selectUserById(userId);
                     if (user != null) {
                         elementVo.setAssigneeId(user.getUserId());
                         elementVo.setAssigneeName(user.getNickName());
@@ -1401,7 +1405,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 }
             } else if (BpmnXMLConstants.ELEMENT_TASK_USER.equals(activityInstance.getActivityType())) {
                 if (StringUtils.isNotBlank(activityInstance.getAssignee())) {
-                    SysUser user = wfCopyMapper.selectUserById(Long.parseLong(activityInstance.getAssignee()));
+                    SysUser user = workflowSystemService.selectUserById(Long.parseLong(activityInstance.getAssignee()));
                     elementVo.setAssigneeId(user.getUserId());
                     elementVo.setAssigneeName(user.getNickName());
                 }
@@ -1411,7 +1415,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 for (HistoricIdentityLink identityLink : linksForTask) {
                     if ("candidate".equals(identityLink.getType())) {
                         if (StringUtils.isNotBlank(identityLink.getUserId())) {
-                            SysUser user = wfCopyMapper.selectUserById(Long.parseLong(identityLink.getUserId()));
+                            SysUser user = workflowSystemService.selectUserById(Long.parseLong(identityLink.getUserId()));
                             stringBuilder.append(user.getNickName()).append(",");
                         }
                         if (StringUtils.isNotBlank(identityLink.getGroupId())) {

@@ -32,6 +32,8 @@ public @interface RateLimiter {
 
     /**
      * 限流类型
+     * - DEFAULT - 全局限流，所有人共享一个计数器，适合保护接口总量
+     * - IP - 按请求者 IP 限流，每个 IP 独立计数，防止单个用户刷接口
      */
     public LimitType limitType() default LimitType.DEFAULT;
 }

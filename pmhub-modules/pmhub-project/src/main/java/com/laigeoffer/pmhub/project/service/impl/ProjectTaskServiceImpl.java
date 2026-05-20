@@ -62,21 +62,21 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ProjectTaskServiceImpl extends ServiceImpl<ProjectTaskMapper, ProjectTask> implements ProjectTaskService {
-    @Autowired
+    @Resource
     private ProjectTaskMapper projectTaskMapper;
-    @Autowired
+    @Resource
     private ProjectMemberMapper projectMemberMapper;
-    @Autowired
+    @Resource
     private ProjectLogService projectLogService;
-    @Autowired
+    @Resource
     private ProjectMapper projectMapper;
-    @Autowired
+    @Resource
     private ProjectStageMapper projectStageMapper;
-    @Autowired
+    @Resource
     private QueryTaskLogFactory queryTaskLogFactory;
-    @Autowired
+    @Resource
     private ProjectFileMapper projectFileMapper;
-    @Autowired
+    @Resource
     private ProjectTaskProcessMapper projectTaskProcessMapper;
 
     // 远程调用流程服务

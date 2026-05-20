@@ -8,7 +8,8 @@ import java.util.Set;
 
 /**
  * 登录用户身份权限
- *
+ * LoginUser 是用户登录后的"身份令牌"，包含了用户的所有身份和权限信息，供后续请求验证和使用。
+ * 实现了 Serializable 接口，可以被序列化，方便存储到 Redis、Session 或通过网络传输
  * @author canghe
  */
 public class LoginUser implements Serializable {

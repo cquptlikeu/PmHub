@@ -9,6 +9,8 @@ import com.laigeoffer.pmhub.base.core.utils.ip.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
+
 /**
  * 记录日志方法
  *
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SysRecordLogService {
-    @Autowired
+    @Resource
     private LogFeignService remoteLogService;
 
     /**

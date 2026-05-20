@@ -57,6 +57,7 @@ public class SysPasswordService {
             throw new ServiceException(errMsg);
         }
 
+        // 将输入框中的原生密码通过加密后，和 当前登录用户的实际加密的密码进行比对
         if (!matches(user, password))
         {
             retryCount = retryCount + 1;
@@ -66,6 +67,7 @@ public class SysPasswordService {
         }
         else
         {
+            //：清除用户登录失败的缓存记录。
             clearLoginRecordCache(username);
         }
     }

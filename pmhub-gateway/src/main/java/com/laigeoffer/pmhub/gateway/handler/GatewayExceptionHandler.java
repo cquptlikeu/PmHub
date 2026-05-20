@@ -28,6 +28,7 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler
     {
         ServerHttpResponse response = exchange.getResponse();
 
+        // 已提交则抛出异常
         if (exchange.getResponse().isCommitted())
         {
             return Mono.error(ex);

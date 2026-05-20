@@ -14,5 +14,15 @@ public enum DataSourceType {
     /**
      * 从库
      */
-    SLAVE
+    SLAVE,
+
+    /**
+     * 系统库
+     */
+    SYSTEM,
+
+    /**
+     * 项目库
+     */
+    PROJECT
 }

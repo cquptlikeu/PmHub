@@ -17,18 +17,45 @@ import java.util.concurrent.ThreadPoolExecutor;
  **/
 @Configuration
 public class ThreadPoolConfig {
-    // 核心线程池大小
+    // 核心线程池大小,线程池中保持活跃的最小线程数,即使空闲也不会被回收，除非设置了 allowCoreThreadTimeOut
     private int corePoolSize = 50;
 
-    // 最大可创建的线程数
+    // 线程池能创建的最大线程数量,当任务队列满了之后，才会创建超过核心线程数的线程
     private int maxPoolSize = 200;
 
-    // 队列最大长度
+    // 任务队列的最大长度,当核心线程都在忙时，新任务进入队列等待
     private int queueCapacity = 1000;
 
-    // 线程池维护线程所允许的空闲时间
+    // 非核心线程空闲多久后被回收
     private int keepAliveSeconds = 300;
 
+    /**
+     * ThreadPoolTaskExecutor就是 Spring 对 Java 原生线程池的一个高级封装（包装器）。
+     * 它不仅完全具备原生线程池的能力，还与 Spring 的生态（比如 Bean 的生命周期、@Async 异步注解）进行了深度整合，让开发者在 Spring Boot 项目中使用多线程变得非常简单和优雅。
+     *
+     * 线程池的工作机制
+     *       新任务到达
+     *       ↓
+     *   1. 核心线程有空闲？
+     *      → 是：核心线程执行
+     *      → 否：继续 ↓
+     *       ↓
+     *   2. 任务队列未满？
+     *      → 是：任务入队（核心线程会从队列取任务执行）
+     *      → 否：继续 ↓
+     *       ↓
+     *   3. 当前线程数 < maxPoolSize？
+     *      → 是：创建【非核心线程】处理【当前这个溢出的任务】
+     *      → 否：继续 ↓
+     *       ↓
+     *   4. 触发拒绝策略
+     *
+     *   关键点： 非核心线程的创建时机：当队列已满且还有新任务溢出时，才会创建非核心线程。
+     *   非核心线程执行什么：
+     *   1. 创建时：直接处理导致队列满的那个"溢出任务"
+     *   2. 创建后：会从队列中获取其他等待的任务执行
+     *
+     */
     @Bean(name = "threadPoolTaskExecutor")
     public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

@@ -43,14 +43,26 @@ public class DruidConfig {
         return druidProperties.dataSource(dataSource);
     }
 
-    @Bean(name = "dynamicDataSource")
+  /*  @Bean(name = "dynamicDataSource")
     @Primary
     public DynamicDataSource dataSource(DataSource masterDataSource) {
         Map<Object, Object> targetDataSources = new HashMap<>();
         targetDataSources.put(DataSourceType.MASTER.name(), masterDataSource);
         setDataSource(targetDataSources, DataSourceType.SLAVE.name(), "slaveDataSource");
         return new DynamicDataSource(masterDataSource, targetDataSources);
-    }
+    }*/
+      @Bean(name = "dynamicDataSource")
+      @Primary
+      public DynamicDataSource dataSource(DataSource masterDataSource) {
+          Map<Object, Object> targetDataSources = new HashMap<>();
+          targetDataSources.put(DataSourceType.MASTER.name(), masterDataSource);
+
+          setDataSource(targetDataSources, DataSourceType.SLAVE.name(), "slaveDataSource");
+          setDataSource(targetDataSources, DataSourceType.SYSTEM.name(), "systemDataSource");
+          setDataSource(targetDataSources, DataSourceType.PROJECT.name(), "projectDataSource");
+
+          return new DynamicDataSource(masterDataSource, targetDataSources);
+      }
 
     /**
      * 设置数据源
@@ -108,5 +120,24 @@ public class DruidConfig {
         registrationBean.setFilter(filter);
         registrationBean.addUrlPatterns(commonJsPattern);
         return registrationBean;
+    }
+
+    /**
+     * ai教我的
+     */
+    @Bean
+    @ConfigurationProperties("spring.datasource.druid.system")
+    public DataSource systemDataSource(DruidProperties druidProperties) {
+        System.out.println("========== SYSTEM DATASOURCE INIT  BOOT==========");
+        DruidDataSource dataSource = DruidDataSourceBuilder.create().build();
+        return druidProperties.dataSource(dataSource);
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.druid.project")
+    public DataSource projectDataSource(DruidProperties druidProperties) {
+        System.out.println("========== PROJECY DATASOURCE INIT BOOT==========");
+        DruidDataSource dataSource = DruidDataSourceBuilder.create().build();
+        return druidProperties.dataSource(dataSource);
     }
 }

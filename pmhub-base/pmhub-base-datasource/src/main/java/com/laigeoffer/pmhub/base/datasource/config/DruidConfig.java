@@ -48,12 +48,24 @@ public class DruidConfig {
         return druidProperties.dataSource(dataSource);
     }
 
-    @Bean(name = "dynamicDataSource")
+    /*@Bean(name = "dynamicDataSource")
     @Primary
     public DynamicDataSource dataSource(DataSource masterDataSource) {
         Map<Object, Object> targetDataSources = new HashMap<>();
         targetDataSources.put(DataSourceType.MASTER.name(), masterDataSource);
         setDataSource(targetDataSources, DataSourceType.SLAVE.name(), "slaveDataSource");
+        return new DynamicDataSource(masterDataSource, targetDataSources);
+    }*/
+    @Bean(name = "dynamicDataSource")
+    @Primary
+    public DynamicDataSource dataSource(DataSource masterDataSource) {
+        Map<Object, Object> targetDataSources = new HashMap<>();
+        targetDataSources.put(DataSourceType.MASTER.name(), masterDataSource);
+
+        setDataSource(targetDataSources, DataSourceType.SLAVE.name(), "slaveDataSource");
+        setDataSource(targetDataSources, DataSourceType.SYSTEM.name(), "systemDataSource");
+        setDataSource(targetDataSources, DataSourceType.PROJECT.name(), "projectDataSource");
+
         return new DynamicDataSource(masterDataSource, targetDataSources);
     }
 
@@ -71,6 +83,7 @@ public class DruidConfig {
         } catch (Exception e) {
         }
     }
+
 
     /**
      * 去除监控页面底部的广告
@@ -113,5 +126,27 @@ public class DruidConfig {
         registrationBean.setFilter(filter);
         registrationBean.addUrlPatterns(commonJsPattern);
         return registrationBean;
+    }
+
+
+    /**
+     * ai教我的
+     */
+    @Bean
+    @ConfigurationProperties("spring.datasource.druid.system")
+    @ConditionalOnProperty(prefix = "spring.datasource.druid.system", name = "enabled", havingValue = "true")
+    public DataSource systemDataSource(DruidProperties druidProperties) {
+        System.out.println("========== SYSTEM DATASOURCE INIT BASE==========");
+        DruidDataSource dataSource = DruidDataSourceBuilder.create().build();
+        return druidProperties.dataSource(dataSource);
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.druid.project")
+    @ConditionalOnProperty(prefix = "spring.datasource.druid.project", name = "enabled", havingValue = "true")
+    public DataSource projectDataSource(DruidProperties druidProperties) {
+        System.out.println("========== PROJECY DATASOURCE INIT BASE==========");
+        DruidDataSource dataSource = DruidDataSourceBuilder.create().build();
+        return druidProperties.dataSource(dataSource);
     }
 }

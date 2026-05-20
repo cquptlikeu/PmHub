@@ -2,8 +2,11 @@ package com.laigeoffer.pmhub.workflow.handler;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.laigeoffer.pmhub.base.core.annotation.DataSource;
+import com.laigeoffer.pmhub.base.core.enums.DataSourceType;
 import com.laigeoffer.pmhub.workflow.common.constant.ProcessConstants;
 import com.laigeoffer.pmhub.workflow.mapper.WfCopyMapper;
+import com.laigeoffer.pmhub.workflow.service.impl.WorkflowSystemService;
 import lombok.AllArgsConstructor;
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.UserTask;
@@ -23,10 +26,14 @@ import java.util.stream.Collectors;
  */
 @AllArgsConstructor
 @Component("multiInstanceHandler")
+//@DataSource(DataSourceType.SYSTEM)
 public class MultiInstanceHandler {
 
     @Autowired
     private WfCopyMapper wfCopyMapper;
+
+    @Autowired
+    private WorkflowSystemService workflowSystemService;
 
     public HashSet<String> getUserIds(DelegateExecution execution) {
         HashSet<String> candidateUserIds = new LinkedHashSet<>();
@@ -40,9 +47,14 @@ public class MultiInstanceHandler {
                 List<String> groups = userTask.getCandidateGroups()
                     .stream().map(item -> item.substring(4)).collect(Collectors.toList());
                 if ("ROLES".equals(dataType)) {
-                    groups.forEach(item -> {
+                 /*   groups.forEach(item -> {
                         List<String> userIds = wfCopyMapper.selectUserIdsByRoleId(Long.parseLong(item))
                             .stream().map(String::valueOf).collect(Collectors.toList());
+                        candidateUserIds.addAll(userIds);
+                    });*/
+                    groups.forEach(item -> {
+                        List<String> userIds = workflowSystemService.selectUserIdsByRoleId(Long.parseLong(item))
+                                .stream().map(String::valueOf).collect(Collectors.toList());
                         candidateUserIds.addAll(userIds);
                     });
                 } else if ("DEPTS".equals(dataType)) {

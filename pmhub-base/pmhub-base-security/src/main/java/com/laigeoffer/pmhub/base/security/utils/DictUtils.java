@@ -1,5 +1,6 @@
 package com.laigeoffer.pmhub.base.security.utils;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.laigeoffer.pmhub.base.core.config.redis.RedisService;
 import com.laigeoffer.pmhub.base.core.constant.CacheConstants;
@@ -37,12 +38,19 @@ public class DictUtils {
      * @param key 参数键
      * @return dictDatas 字典数据列表
      */
-    public static List<SysDictData> getDictCache(String key) {
+   /* public static List<SysDictData> getDictCache(String key) {
         JSONArray arrayCache = SpringUtils.getBean(RedisService.class).getCacheObject(getCacheKey(key));
         if (StringUtils.isNotNull(arrayCache)) {
             return arrayCache.toList(SysDictData.class);
         }
         return null;
+    }*/
+    public static List<SysDictData> getDictCache(String key) {
+        Object cacheObj = SpringUtils.getBean(RedisService.class).getCacheObject(getCacheKey(key));
+        if (StringUtils.isNull(cacheObj)) {
+            return null;
+        }
+        return JSON.parseArray(JSON.toJSONString(cacheObj), SysDictData.class);
     }
 
     /**

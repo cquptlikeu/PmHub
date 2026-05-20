@@ -7,8 +7,8 @@ spring:
       # 主库数据源
       master:
         url: jdbc:mysql://127.0.0.1:3306/laigeoffer-pmhub?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-        username: root
-        password: 123456
+        username: likeu
+        password: Wrk940203gfo7q0
       # 从库数据源
       slave:
         # 从数据源开关/默认关闭
@@ -16,19 +16,21 @@ spring:
         url:
         username:
         password:
-      # 初始连接数
+      # 初始连接数，当应用程序刚启动，连接池初始化时，会第一时间立刻向数据库建立 5 个连接备用。
       initialSize: 5
-      # 最小连接池数量
+      # 最小连接池数量，连接池为了保证随时有响应能力，池子里“闲置待命”的连接数不能低于 10 个。
+      # 当连接池中的连接数少于 10时，将会有 10 - 当前连接数 个新的连接被创建，直到连接池中的连接数达到 10。
       minIdle: 10
-      # 最大连接池数量
+      # 最大连接池数量，连接池最多只能同时存在 20 个连接。第21个必须等待
       maxActive: 20
-      # 配置获取连接等待超时的时间
+      # 配置获取连接等待超时的时间，表示第21个最多等待的时间
       maxWait: 60000
       # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
       timeBetweenEvictionRunsMillis: 60000
-      # 配置一个连接在池中最小生存的时间，单位是毫秒
+      # 配置一个连接在池中最小空闲的时间，单位是毫秒。前提是清理后，池子里剩余的空闲连接数不能小于 minIdle（10个）。
       minEvictableIdleTimeMillis: 300000
-      # 配置一个连接在池中最大生存的时间，单位是毫秒
+      # 配置一个连接在池中最大空闲的时间，单位是毫秒。哪怕池中的连接数小于10个，也会强制清理掉
+      # 然后再由系统重新创建新的连接来补充。这主要是为了防止数据库单方面断开长时间不活跃的死连接。
       maxEvictableIdleTimeMillis: 900000
       # 配置检测连接是否有效
       validationQuery: SELECT 1 FROM DUAL
@@ -56,7 +58,7 @@ spring:
   # redis 配置
   redis:
     # 地址
-    host: 127.0.0.1
+    host: 192.168.100.128
     # 端口，默认为6379
     port: 6379
     # 数据库索引

@@ -39,6 +39,7 @@ import org.flowable.bpmn.model.StartEvent;
 import org.flowable.engine.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -305,6 +306,8 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         if (ObjectUtil.isNull(model)) {
             throw new RuntimeException("流程模型不存在！");
         }
+
+
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(modelBo.getBpmnXml());
         if (ObjectUtil.isEmpty(bpmnModel)) {
             throw new RuntimeException("获取模型设计失败！");

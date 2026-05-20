@@ -1,10 +1,13 @@
 package com.laigeoffer.pmhub.workflow.listener;
 
 import cn.hutool.log.LogFactory;
+import com.laigeoffer.pmhub.base.core.annotation.DataSource;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.SysUser;
+import com.laigeoffer.pmhub.base.core.enums.DataSourceType;
 import com.laigeoffer.pmhub.base.core.utils.StringUtils;
 import com.laigeoffer.pmhub.workflow.mapper.ListenerMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfCopyMapper;
+import com.laigeoffer.pmhub.workflow.service.impl.WorkflowSystemService;
 import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.delegate.event.FlowableProcessStartedEvent;
@@ -21,6 +24,7 @@ import java.util.List;
  * @author canghe
  */
 @Component
+//@DataSource(DataSourceType.SYSTEM)
 public class GlobalProcessStartedListener extends AbstractFlowableEngineEventListener {
 
 
@@ -30,6 +34,8 @@ public class GlobalProcessStartedListener extends AbstractFlowableEngineEventLis
     @Autowired
     WfCopyMapper wfCopyMapper;
 
+    @Autowired
+    private WorkflowSystemService workflowSystemService;
 
     @Override
     protected void processStarted(FlowableProcessStartedEvent event) {
@@ -40,8 +46,10 @@ public class GlobalProcessStartedListener extends AbstractFlowableEngineEventLis
         ExecutionEntityImpl processInstance = (ExecutionEntityImpl) flowableEntityEvent.getEntity();
 
         // 获取申请人的微信
-        SysUser sysUser = wfCopyMapper.selectUserById(Long.parseLong(processInstance.getVariable(BpmnXMLConstants.ATTRIBUTE_EVENT_START_INITIATOR).toString()));
+        //SysUser sysUser = wfCopyMapper.selectUserById(Long.parseLong(processInstance.getVariable(BpmnXMLConstants.ATTRIBUTE_EVENT_START_INITIATOR).toString()));
+        SysUser sysUser = workflowSystemService.selectUserById(Long.parseLong(processInstance.getVariable(BpmnXMLConstants.ATTRIBUTE_EVENT_START_INITIATOR).toString()));
         String createWxName = sysUser.getUserWxName();
+        //String createWxName = null;
 
         if (StringUtils.isNotEmpty(createWxName)){
             List<String> userIds = new ArrayList<>();

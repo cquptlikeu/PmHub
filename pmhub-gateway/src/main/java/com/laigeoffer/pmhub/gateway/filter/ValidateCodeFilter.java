@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 验证码过滤器
+ * 图片验证码过滤器
  *
  * @author canghe
  */

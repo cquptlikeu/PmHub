@@ -24,7 +24,11 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * 跨站脚本过滤器
- *
+ * XssFilter 是一个跨站脚本攻击 (XSS) 防护过滤器，运行在网关层，用于在请求到达后端服务之前，过滤掉请求体中的恶意 JavaScript 代码。
+ *  1. 拦截恶意脚本：过滤 <script>、onclick 等危险标签/属性
+ *  2. 协议白名单：阻止 javascript: 等危险协议
+ *  3. HTML 清理：只保留白名单内的安全标签
+ *  4. 网关层防护：所有后端服务共享同一套防护逻辑
  * @author canghe
  */
 @Component

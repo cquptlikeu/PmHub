@@ -277,6 +277,11 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
         LambdaQueryWrapper<WfApprovalSet> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WfApprovalSet::getExtraId, approvalSetDTO.getTaskId()).eq(WfApprovalSet::getType, ProjectStatusEnum.TASK.getStatusName());
         WfApprovalSet wfApprovalSet = wfApprovalSetMapper.selectOne(queryWrapper);
+
+        if (wfApprovalSet == null) {
+            throw new ServiceException("未找到该任务的审批设置，请先初始化审批设置");
+        }
+
         // 无需审批
         if ("1".equals(wfApprovalSet.getApproved())) {
             if (!Objects.equals(wfTaskProcessMapper.selectStatusByTaskId2(approvalSetDTO.getTaskId()), ProjectStatusEnum.NO_STARTED.getStatus())) {
@@ -298,7 +303,10 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
                         List<Comment> list = taskService.getProcessInstanceComments(pt.getInstanceId());
                         list.sort(Comparator.comparing(Comment::getTime).reversed());
                         // 已通过的流程不允许修改审批设置
-                        if ("1".equals(list.get(0).getType())) {
+                      /*  if ("1".equals(list.get(0).getType())) {
+                            throw new ServiceException("已通过的流程不允许修改审批设置");
+                        }*/
+                        if (list != null && !list.isEmpty() && "1".equals(list.get(0).getType())) {
                             throw new ServiceException("已通过的流程不允许修改审批设置");
                         }
                     }
@@ -465,6 +473,8 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             queryWrapper.in(WfMaterialsScrappedProcess::getMaterialId, ids);
             list = wfMaterialsScrappedProcessMapper.selectList(queryWrapper);
         }
+
+
         return list;
     }
 

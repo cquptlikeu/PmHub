@@ -426,6 +426,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         wfTaskMessageDealMapper.delete(qw);
     }
 
+    @Autowired
+    private WorkflowProjectService workflowProjectService;
+
     /**
      * 取消申请
      *
@@ -451,7 +454,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         // 更新关联关系
         LambdaQueryWrapper<WfTaskProcess> qw = new LambdaQueryWrapper<>();
         qw.eq(WfTaskProcess::getInstanceId, bo.getProcInsId());
-        WfTaskProcess wfTaskProcess = wfTaskProcessMapper.selectOne(qw);
+//        WfTaskProcess wfTaskProcess = wfTaskProcessMapper.selectOne(qw);
+        WfTaskProcess wfTaskProcess = workflowProjectService.selectByInstanceId(bo.getProcInsId());
         if (wfTaskProcess != null) {
             wfTaskProcess.setInstanceId(null);
             wfTaskProcess.setTaskId(null);

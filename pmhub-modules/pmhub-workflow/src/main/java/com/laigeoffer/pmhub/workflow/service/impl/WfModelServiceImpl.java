@@ -40,6 +40,7 @@ import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.Model;
 import org.flowable.engine.repository.ModelQuery;
 import org.flowable.engine.repository.ProcessDefinition;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +64,8 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
     private final WfTaskProcessMapper wfTaskProcessMapper;
     private final WfMaterialsScrappedProcessMapper wfMaterialsScrappedProcessMapper;
     private final WfApprovalSetMapper wfApprovalSetMapper;
+
+
 
     @Override
     public Table2DataInfo<WfModelVo> list(WfModelBo modelBo, PageQuery pageQuery) {
@@ -308,6 +311,8 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         if (ObjectUtil.isNull(model)) {
             throw new RuntimeException("流程模型不存在！");
         }
+
+
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(modelBo.getBpmnXml());
         if (ObjectUtil.isEmpty(bpmnModel)) {
             throw new RuntimeException("获取模型设计失败！");
@@ -393,8 +398,11 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         });
     }
 
+    @Autowired
+    private WorkflowProjectService workflowProjectService;
+
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    //@Transactional(rollbackFor = Exception.class)
     public boolean deployModel(String modelId) {
         // 获取流程模型
         Model model = repositoryService.getModel(modelId);
@@ -417,23 +425,31 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionKey(model.getKey())
                 .latestVersion().singleResult();
         // 更新审批设置
-        LambdaUpdateChainWrapper<WfTaskProcess> wfTaskProcess = new LambdaUpdateChainWrapper<>(wfTaskProcessMapper);
+       /* LambdaUpdateChainWrapper<WfTaskProcess> wfTaskProcess = new LambdaUpdateChainWrapper<>(wfTaskProcessMapper);
         wfTaskProcess.likeRight(WfTaskProcess::getDefinitionId, model.getKey()).eq(WfTaskProcess::getApproved, 0)
                 .isNull(WfTaskProcess::getInstanceId)
                 .set(WfTaskProcess::getDefinitionId, processDefinition.getId())
                 .set(WfTaskProcess::getDeploymentId, processDefinition.getDeploymentId());
-        wfTaskProcess.update();
+        wfTaskProcess.update();*/
         LambdaUpdateChainWrapper<WfApprovalSet> materialsApprovalSet = new LambdaUpdateChainWrapper<>(wfApprovalSetMapper);
         materialsApprovalSet.likeRight(WfApprovalSet::getDefinitionId, model.getKey())
                 .set(WfApprovalSet::getDefinitionId, processDefinition.getId())
                 .set(WfApprovalSet::getDeploymentId, processDefinition.getDeploymentId());
         materialsApprovalSet.update();
+
         LambdaUpdateChainWrapper<WfMaterialsScrappedProcess> wfMaterialsScrappedProcess = new LambdaUpdateChainWrapper<>(wfMaterialsScrappedProcessMapper);
         wfMaterialsScrappedProcess.likeRight(WfMaterialsScrappedProcess::getDefinitionId, model.getKey()).eq(WfMaterialsScrappedProcess::getApproved, 0)
                 .isNull(WfMaterialsScrappedProcess::getInstanceId)
                 .set(WfMaterialsScrappedProcess::getDefinitionId, processDefinition.getId())
                 .set(WfMaterialsScrappedProcess::getDeploymentId, processDefinition.getDeploymentId());
         wfMaterialsScrappedProcess.update();
+
+        workflowProjectService.updateDeployInfo(
+                model.getKey(),
+                processDefinition.getId(),
+                processDefinition.getDeploymentId()
+        );
+
         // 保存部署表单
         return deployFormService.saveInternalDeployForm(deployment.getId(), bpmnModel);
     }
