@@ -11,6 +11,7 @@ import com.laigeoffer.pmhub.project.ai.constant.RiskLevel;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectWeeklyReport;
+import com.laigeoffer.pmhub.project.ai.dto.ProjectWeeklyReportDraft;
 import com.laigeoffer.pmhub.project.ai.dto.WeeklyReportGenerateRequest;
 import com.laigeoffer.pmhub.project.ai.mapper.ProjectHealthSnapshotMapper;
 import com.laigeoffer.pmhub.project.ai.mapper.ProjectRiskRecordMapper;
@@ -36,9 +37,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -123,7 +126,10 @@ class ProjectWeeklyReportServiceImplTest {
         assertEquals(reportId, report.getId());
         assertEquals("project-1", report.getProjectId());
         assertEquals("analysis-1", report.getAnalysisTaskId());
-        assertEquals("SUCCESS", report.getStatus());
+        // 无模型客户端 -> 走本地模板降级，状态应为 FALLBACK 并留痕，下游可区分真 AI 与兜底
+        assertEquals("FALLBACK", report.getStatus());
+        assertNotNull(report.getErrorMessage());
+        assertTrue(report.getErrorMessage().contains("降级"));
         assertEquals(Integer.valueOf(1), report.getVersion());
         assertTrue(report.getContent().contains("75"));
         assertTrue(report.getContent().contains("延期任务"));
@@ -131,6 +137,34 @@ class ProjectWeeklyReportServiceImplTest {
         assertTrue(report.getStructuredContent().contains("\"projectId\":\"project-1\""));
         assertEquals("tester", report.getCreatedBy());
         assertNotNull(report.getCreatedTime());
+    }
+
+    @Test
+    void shouldMarkReportAsSuccessWhenModelGenerates() {
+        WeeklyReportGenerateRequest request = new WeeklyReportGenerateRequest();
+        request.setProjectId("project-1");
+        request.setWeekStart(new Date(1714492800000L));
+        request.setWeekEnd(new Date(1715097600000L));
+        when(projectMapper.selectById("project-1")).thenReturn(buildProject(0));
+        when(projectWeeklyReportMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(projectWeeklyReportMapper.insert(any(ProjectWeeklyReport.class))).thenReturn(1);
+        when(projectHealthSnapshotMapper.selectLatestByProjectId("project-1")).thenReturn(buildSnapshot());
+        when(projectRiskRecordMapper.selectByAnalysisTaskId("analysis-1")).thenReturn(Collections.emptyList());
+        when(workflowRiskClient.getProjectRiskSummary("project-1")).thenReturn(buildWorkflowSummary());
+        doReturn(ProjectWeeklyReportDraft.builder()
+                .content("模型生成的周报内容")
+                .structuredContent("{}")
+                .modelGenerated(true)
+                .build())
+                .when(projectAiNarrativeService).buildWeeklyReport(any(), any(), any(), any(), any(), any());
+
+        projectWeeklyReportService.generateWeeklyReport(request);
+
+        verify(projectWeeklyReportMapper).insert(reportCaptor.capture());
+        ProjectWeeklyReport report = reportCaptor.getValue();
+        assertEquals("SUCCESS", report.getStatus());
+        assertNull(report.getErrorMessage());
+        assertEquals("模型生成的周报内容", report.getContent());
     }
 
     @Test

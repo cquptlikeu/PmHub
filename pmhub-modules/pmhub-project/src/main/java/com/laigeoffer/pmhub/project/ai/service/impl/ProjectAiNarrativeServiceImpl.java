@@ -10,6 +10,7 @@ import com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord;
 import com.laigeoffer.pmhub.project.ai.dto.ProjectWeeklyReportDraft;
 import com.laigeoffer.pmhub.project.ai.service.ProjectAiNarrativeService;
+import com.laigeoffer.pmhub.project.ai.util.AiContentSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -49,14 +50,14 @@ public class ProjectAiNarrativeServiceImpl implements ProjectAiNarrativeService 
     public String buildSummary(ProjectHealthSnapshot snapshot, List<ProjectRiskRecord> risks, String workflowSummary) {
         String normalizedWorkflowSummary = normalizeWorkflowSummary(workflowSummary);
         if (snapshot == null) {
-            return NO_ANALYSIS_SUMMARY + "流程情况：" + normalizedWorkflowSummary;
+            return AiContentSanitizer.sanitizeOutput(NO_ANALYSIS_SUMMARY + "流程情况：" + normalizedWorkflowSummary);
         }
 
         String localSummary = buildLocalSummary(snapshot, risks, normalizedWorkflowSummary);
         Map<String, Object> structuredInput = buildStructuredContent(
                 snapshot.getProjectId(), null, null, snapshot, risks, normalizedWorkflowSummary,
                 extractTopRiskTitles(risks, 3), localSummary);
-        return generateModelSummary(structuredInput).orElse(localSummary);
+        return AiContentSanitizer.sanitizeOutput(generateModelSummary(structuredInput).orElse(localSummary));
     }
 
     @Override
@@ -71,11 +72,14 @@ public class ProjectAiNarrativeServiceImpl implements ProjectAiNarrativeService 
                 : buildLocalSummary(snapshot, risks, normalizedWorkflowSummary);
         Map<String, Object> structured = buildStructuredContent(
                 projectId, weekStart, weekEnd, snapshot, risks, normalizedWorkflowSummary, titles, localSummary);
-        String content = generateModelWeeklyReport(structured).orElse(localContent);
+        Optional<String> modelContent = generateModelWeeklyReport(structured);
+        boolean modelGenerated = modelContent.isPresent();
+        String content = AiContentSanitizer.sanitizeOutput(modelContent.orElse(localContent));
         structured.put("generatedContent", content);
         return ProjectWeeklyReportDraft.builder()
                 .content(content)
                 .structuredContent(toJson(structured))
+                .modelGenerated(modelGenerated)
                 .build();
     }
 
@@ -156,9 +160,9 @@ public class ProjectAiNarrativeServiceImpl implements ProjectAiNarrativeService 
             riskItem.put("riskLevel", risk.getRiskLevel());
             riskItem.put("sourceType", risk.getSourceType());
             riskItem.put("sourceId", risk.getSourceId());
-            riskItem.put("title", risk.getTitle());
-            riskItem.put("reason", risk.getReason());
-            riskItem.put("suggestion", risk.getSuggestion());
+            riskItem.put("title", AiContentSanitizer.sanitizePromptText(risk.getTitle()));
+            riskItem.put("reason", AiContentSanitizer.sanitizePromptText(risk.getReason()));
+            riskItem.put("suggestion", AiContentSanitizer.sanitizePromptText(risk.getSuggestion()));
             riskItem.put("status", risk.getStatus());
             return riskItem;
         }).collect(Collectors.toCollection(ArrayList::new));

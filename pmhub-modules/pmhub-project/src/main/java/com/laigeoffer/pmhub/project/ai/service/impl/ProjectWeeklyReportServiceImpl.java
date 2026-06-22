@@ -142,7 +142,12 @@ public class ProjectWeeklyReportServiceImpl implements ProjectWeeklyReportServic
         report.setContent(draft.getContent());
         report.setStructuredContent(draft.getStructuredContent());
         report.setVersion(version);
-        report.setStatus(WeeklyReportStatus.SUCCESS.getCode());
+        if (draft.isModelGenerated()) {
+            report.setStatus(WeeklyReportStatus.SUCCESS.getCode());
+        } else {
+            report.setStatus(WeeklyReportStatus.FALLBACK.getCode());
+            report.setErrorMessage("AI模型未启用或调用失败，已降级为本地模板生成");
+        }
         report.setCreatedBy(username);
         report.setCreatedTime(now);
         report.setUpdatedBy(username);

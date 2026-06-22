@@ -2,6 +2,7 @@ package com.laigeoffer.pmhub.project.ai.constant;
 
 public enum WeeklyReportStatus {
     SUCCESS("SUCCESS", "成功"),
+    FALLBACK("FALLBACK", "降级生成"),
     FAILED("FAILED", "失败");
 
     private final String code;

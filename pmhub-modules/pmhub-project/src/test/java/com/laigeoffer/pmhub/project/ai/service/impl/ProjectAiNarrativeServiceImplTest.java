@@ -89,6 +89,35 @@ class ProjectAiNarrativeServiceImplTest {
         assertTrue(draft.getStructuredContent().contains("\"riskRecords\""));
         assertTrue(draft.getStructuredContent().contains(RiskType.DELAYED_TASK.getCode()));
         assertTrue(draft.getContent().contains("任务已逾期"));
+        assertFalse(draft.isModelGenerated());
+    }
+
+    @Test
+    void shouldStripDangerousHtmlFromModelSummary() {
+        when(aiModelClient.generateSummary(any()))
+                .thenReturn(Optional.of("<script>alert(1)</script>项目进展正常"));
+
+        String summary = projectAiNarrativeService.buildSummary(
+                buildSnapshot(), Collections.singletonList(buildRisk()), "当前无审批卡点");
+
+        assertFalse(summary.toLowerCase().contains("<script"));
+        assertTrue(summary.contains("项目进展正常"));
+    }
+
+    @Test
+    void shouldMarkWeeklyDraftAsModelGeneratedWhenModelReturns() {
+        when(aiModelClient.generateWeeklyReport(any())).thenReturn(Optional.of("模型生成的周报"));
+
+        ProjectWeeklyReportDraft draft = projectAiNarrativeService.buildWeeklyReport(
+                "project-1",
+                new Date(1714492800000L),
+                new Date(1715097600000L),
+                buildSnapshot(),
+                Collections.singletonList(buildRisk()),
+                "当前无审批卡点");
+
+        assertTrue(draft.isModelGenerated());
+        assertEquals("模型生成的周报", draft.getContent());
     }
 
     private ProjectHealthSnapshot buildSnapshot() {
