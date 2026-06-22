@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laigeoffer.pmhub.project.ai.mapper.ProjectWeeklyReportMapper">
+
+    <select id="selectByProjectId" parameterType="java.lang.String"
+            resultType="com.laigeoffer.pmhub.project.ai.domain.ProjectWeeklyReport">
+        select id,
+               project_id,
+               analysis_task_id,
+               week_start,
+               week_end,
+               content,
+               structured_content,
+               version,
+               status,
+               error_message,
+               created_by,
+               created_time,
+               updated_by,
+               updated_time
+        from project_weekly_report
+        where project_id = #{projectId}
+        order by week_start desc, version desc, created_time desc
+    </select>
+</mapper>

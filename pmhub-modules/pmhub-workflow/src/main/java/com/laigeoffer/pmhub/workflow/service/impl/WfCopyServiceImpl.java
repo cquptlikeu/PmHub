@@ -37,6 +37,8 @@ public class WfCopyServiceImpl implements IWfCopyService {
 
     private final HistoryService historyService;
 
+    private final WorkflowSystemService workflowSystemService;
+
     /**
      * 查询流程抄送
      *
@@ -94,7 +96,7 @@ public class WfCopyServiceImpl implements IWfCopyService {
         String[] ids = taskBo.getCopyUserIds().split(",");
         List<WfCopy> copyList = new ArrayList<>(ids.length);
         Long originatorId = SecurityUtils.getUserId();
-        SysUser sysUser = baseMapper.selectUserById(originatorId);
+        SysUser sysUser = workflowSystemService.selectUserById(originatorId);
         String originatorName = sysUser.getNickName();
         String title = historicProcessInstance.getProcessDefinitionName() + "-" + taskBo.getTaskName();
         for (String id : ids) {

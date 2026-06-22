@@ -9,6 +9,7 @@ import com.laigeoffer.pmhub.workflow.listener.strategy.ListenerFactory;
 import com.laigeoffer.pmhub.workflow.mapper.ListenerMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfCopyMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfTaskMessageDealMapper;
+import com.laigeoffer.pmhub.workflow.service.impl.WorkflowSystemService;
 import com.laigeoffer.pmhub.workflow.utils.ProcessUtils;
 import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
@@ -30,11 +31,13 @@ public class GlobalTaskAssigneeListener extends AbstractFlowableEngineEventListe
 
 
     private static WfCopyMapper wfCopyMapper;
+    private static WorkflowSystemService workflowSystemService;
     private static ListenerFactory listenerFactory;
 
     @Autowired
-    private void setWfCopyMapper(WfCopyMapper wfCopyMapper, ListenerFactory listenerFactory) {
+    private void setWfCopyMapper(WfCopyMapper wfCopyMapper, WorkflowSystemService workflowSystemService, ListenerFactory listenerFactory) {
         GlobalTaskAssigneeListener.wfCopyMapper = wfCopyMapper;
+        GlobalTaskAssigneeListener.workflowSystemService = workflowSystemService;
         GlobalTaskAssigneeListener.listenerFactory = listenerFactory;
     }
 
@@ -117,11 +120,11 @@ public class GlobalTaskAssigneeListener extends AbstractFlowableEngineEventListe
             ,String taskDetailIUrl
             ,String taskName, String type
     ){
-        SysUser sysUser = wfCopyMapper.selectUserById(createUid);
+        SysUser sysUser = workflowSystemService.selectUserById(createUid);
         // 申请人信息
         String createWxNickName = sysUser.getNickName();
         // 审批人微信号
-        String taskWxName = wfCopyMapper.selectUserById(actinUid).getUserWxName();
+        String taskWxName = workflowSystemService.selectUserById(actinUid).getUserWxName();
 
 
         if (StringUtils.isNotEmpty(taskWxName)) {

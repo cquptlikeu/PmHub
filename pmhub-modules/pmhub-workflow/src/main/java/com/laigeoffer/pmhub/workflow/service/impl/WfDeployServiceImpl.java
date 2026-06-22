@@ -4,6 +4,7 @@ import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.laigeoffer.pmhub.base.core.context.SecurityContextHolder;
 import com.laigeoffer.pmhub.base.core.core.domain.PageQuery;
 import com.laigeoffer.pmhub.base.core.core.page.Table2DataInfo;
 import com.laigeoffer.pmhub.base.core.enums.ProjectStatusEnum;
@@ -52,11 +53,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeployService {
 
+    private static final String INNER_OPERATOR = "inner";
+
     private final RepositoryService repositoryService;
     private final WfDeployFormMapper deployFormMapper;
     private final WfApprovalSetMapper wfApprovalSetMapper;
     private final WfTaskProcessMapper wfTaskProcessMapper;
     private final WfMaterialsScrappedProcessMapper wfMaterialsScrappedProcessMapper;
+    private final WorkflowProjectService workflowProjectService;
 
     @Override
     public Table2DataInfo<WfDeployVo> queryPageList(ProcessQuery processQuery, PageQuery pageQuery) {
@@ -175,13 +179,14 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approvalSet(MaterialsApprovalSetDTO approvalSetDTO, String type) {
+        String operator = currentOperator();
         WfApprovalSet mas = getMaterialsApprovalSet(type, null);
         if (mas != null) {
             // 更新
             mas.setApproved(approvalSetDTO.getApproved());
             mas.setDefinitionId(approvalSetDTO.getDefinitionId());
             mas.setDeploymentId(approvalSetDTO.getDeploymentId());
-            mas.setUpdatedBy(SecurityUtils.getUsername());
+            mas.setUpdatedBy(operator);
             mas.setUpdatedTime(new Date());
             wfApprovalSetMapper.updateById(mas);
         } else {
@@ -191,9 +196,9 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             wfApprovalSet.setType(type);
             wfApprovalSet.setDefinitionId(approvalSetDTO.getDefinitionId());
             wfApprovalSet.setDeploymentId(approvalSetDTO.getDeploymentId());
-            wfApprovalSet.setCreatedBy(SecurityUtils.getUsername());
+            wfApprovalSet.setCreatedBy(operator);
             wfApprovalSet.setCreatedTime(new Date());
-            wfApprovalSet.setUpdatedBy(SecurityUtils.getUsername());
+            wfApprovalSet.setUpdatedBy(operator);
             wfApprovalSet.setUpdatedTime(new Date());
             wfApprovalSetMapper.insert(wfApprovalSet);
         }
@@ -243,7 +248,9 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
         WfTaskProcess pt = wfTaskProcessMapper.selectOne(queryWrapper);
         if (pt != null) {
             if ("1".equals(pt.getApproved())) {
-                if (!Objects.equals(wfTaskProcessMapper.selectStatusByTaskId2(approvalSetDTO.getTaskId()), ProjectStatusEnum.NO_STARTED.getStatus())) {
+                Integer taskStatus = workflowProjectService.selectTaskStatus(approvalSetDTO.getTaskId());
+                if (!Objects.equals(taskStatus, ProjectStatusEnum.NO_STARTED.getStatus())
+                        && !Objects.equals(taskStatus, ProjectStatusEnum.ARCHIVED.getStatus())) {
                     throw new ServiceException("需将任务状态变为未开始才能修改审批设置");
                 }
             }
@@ -277,21 +284,30 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
         LambdaQueryWrapper<WfApprovalSet> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WfApprovalSet::getExtraId, approvalSetDTO.getTaskId()).eq(WfApprovalSet::getType, ProjectStatusEnum.TASK.getStatusName());
         WfApprovalSet wfApprovalSet = wfApprovalSetMapper.selectOne(queryWrapper);
+        boolean createApprovalSet = wfApprovalSet == null;
+        if (createApprovalSet) {
+            String operator = currentOperator();
+            wfApprovalSet = new WfApprovalSet();
+            wfApprovalSet.setExtraId(approvalSetDTO.getTaskId());
+            wfApprovalSet.setType(ProjectStatusEnum.TASK.getStatusName());
+            wfApprovalSet.setCreatedBy(operator);
+            wfApprovalSet.setCreatedTime(new Date());
+        }
 
-        if (wfApprovalSet == null) {
+        if (StringUtils.isBlank(approvalSetDTO.getTaskId())) {
             throw new ServiceException("未找到该任务的审批设置，请先初始化审批设置");
         }
 
         // 无需审批
-        if ("1".equals(wfApprovalSet.getApproved())) {
-            if (!Objects.equals(wfTaskProcessMapper.selectStatusByTaskId2(approvalSetDTO.getTaskId()), ProjectStatusEnum.NO_STARTED.getStatus())) {
+        if (!createApprovalSet && "1".equals(wfApprovalSet.getApproved())) {
+            Integer taskStatus = workflowProjectService.selectTaskStatus(approvalSetDTO.getTaskId());
+            if (!Objects.equals(taskStatus, ProjectStatusEnum.NO_STARTED.getStatus())
+                    && !Objects.equals(taskStatus, ProjectStatusEnum.ARCHIVED.getStatus())) {
                 throw new ServiceException("需将任务状态变为未开始才能修改审批设置");
             }
-        } else {
+        } else if (!createApprovalSet) {
             // 需要审批
-            LambdaQueryWrapper<WfTaskProcess> qw = new LambdaQueryWrapper<>();
-            qw.eq(WfTaskProcess::getExtraId, approvalSetDTO.getTaskId()).eq(WfTaskProcess::getType, ProjectStatusEnum.TASK.getStatusName());
-            WfTaskProcess pt = wfTaskProcessMapper.selectOne(qw);
+            WfTaskProcess pt = workflowProjectService.selectTaskProcess(approvalSetDTO.getTaskId(), ProjectStatusEnum.TASK.getStatusName());
             if (pt != null && StringUtils.isNotBlank(pt.getInstanceId())) {
                 // 根据 instanceId 查询流程的状态是不是已拒绝
                 HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery().processInstanceId(pt.getInstanceId()).singleResult();
@@ -316,9 +332,13 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
         wfApprovalSet.setApproved(approvalSetDTO.getApproved());
         wfApprovalSet.setDeploymentId(approvalSetDTO.getDeploymentId());
         wfApprovalSet.setDefinitionId(approvalSetDTO.getDefinitionId());
-        wfApprovalSet.setUpdatedBy(SecurityUtils.getUsername());
+        wfApprovalSet.setUpdatedBy(currentOperator());
         wfApprovalSet.setUpdatedTime(new Date());
-        wfApprovalSetMapper.updateById(wfApprovalSet);
+        if (createApprovalSet) {
+            wfApprovalSetMapper.insert(wfApprovalSet);
+        } else {
+            wfApprovalSetMapper.updateById(wfApprovalSet);
+        }
         return true;
     }
 
@@ -355,6 +375,7 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
 
     @Override
     public WfTaskProcess insertWfTaskProcess(String extraId, String type, String approved, String definitionId, String deploymentId) {
+        String operator = currentOperator();
         LambdaQueryWrapper<WfTaskProcess> qw = new LambdaQueryWrapper<>();
         qw.eq(WfTaskProcess::getExtraId, extraId).eq(WfTaskProcess::getType, type);
         WfTaskProcess wp = wfTaskProcessMapper.selectOne(qw);
@@ -362,7 +383,7 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             wp.setApproved(approved);
             wp.setDefinitionId(definitionId);
             wp.setDeploymentId(deploymentId);
-            wp.setUpdatedBy(SecurityUtils.getUsername());
+            wp.setUpdatedBy(operator);
             wp.setUpdatedTime(new Date());
             wfTaskProcessMapper.updateById(wp);
             return wp;
@@ -372,6 +393,8 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             wfTaskProcess.setType(type);
             wfTaskProcess.setApproved(approved);
             extracted(definitionId, deploymentId, wfTaskProcess);
+            wfTaskProcess.setCreatedBy(operator);
+            wfTaskProcess.setUpdatedBy(operator);
             wfTaskProcessMapper.insert(wfTaskProcess);
             return wfTaskProcess;
         }
@@ -379,6 +402,7 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
 
     @Override
     public boolean insertOrUpdateApprovalSet(String extraId, String type, String approved, String definitionId, String deploymentId) {
+        String operator = currentOperator();
         LambdaQueryWrapper<WfApprovalSet> qw = new LambdaQueryWrapper<>();
         // 分布式任务异常场景模拟，睡10秒
 //        try {
@@ -392,7 +416,7 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             mas.setApproved(approved);
             mas.setDefinitionId(definitionId);
             mas.setDeploymentId(deploymentId);
-            mas.setUpdatedBy(SecurityUtils.getUsername());
+            mas.setUpdatedBy(operator);
             mas.setUpdatedTime(new Date());
             wfApprovalSetMapper.updateById(mas);
         } else {
@@ -402,14 +426,27 @@ public class WfDeployServiceImpl extends FlowServiceFactory implements IWfDeploy
             wfApprovalSet.setApproved(approved);
             wfApprovalSet.setDefinitionId(definitionId);
             wfApprovalSet.setDeploymentId(deploymentId);
-            wfApprovalSet.setCreatedBy(SecurityUtils.getUsername());
+            wfApprovalSet.setCreatedBy(operator);
             wfApprovalSet.setCreatedTime(new Date());
-            wfApprovalSet.setUpdatedBy(SecurityUtils.getUsername());
+            wfApprovalSet.setUpdatedBy(operator);
             wfApprovalSet.setUpdatedTime(new Date());
             wfApprovalSetMapper.insert(wfApprovalSet);
         }
 
         return true;
+    }
+
+    private String currentOperator() {
+        try {
+            String username = SecurityUtils.getUsername();
+            if (StringUtils.isNotBlank(username)) {
+                return username;
+            }
+        } catch (ServiceException ignored) {
+            // InnerAuth requests may not carry LOGIN_USER but still provide username headers.
+        }
+        String headerUsername = SecurityContextHolder.getUserName();
+        return StringUtils.isNotBlank(headerUsername) ? headerUsername : INNER_OPERATOR;
     }
 
     @Override

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laigeoffer.pmhub.project.ai.mapper.ProjectHealthSnapshotMapper">
+
+    <select id="selectLatestByProjectId" parameterType="java.lang.String"
+            resultType="com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot">
+        select id,
+               project_id,
+               analysis_task_id,
+               health_score,
+               health_level,
+               deduction_detail,
+               risk_count,
+               high_risk_count,
+               snapshot_time,
+               created_by,
+               created_time,
+               updated_by,
+               updated_time
+        from project_health_snapshot
+        where project_id = #{projectId}
+        order by snapshot_time desc, created_time desc
+        limit 1
+    </select>
+
+    <select id="selectLatestByProjectIds" resultType="com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot">
+        select id,
+               project_id,
+               analysis_task_id,
+               health_score,
+               health_level,
+               deduction_detail,
+               risk_count,
+               high_risk_count,
+               snapshot_time,
+               created_by,
+               created_time,
+               updated_by,
+               updated_time
+        from project_health_snapshot h
+        where h.project_id in
+        <foreach collection="projectIds" item="projectId" open="(" separator="," close=")">
+            #{projectId}
+        </foreach>
+          and h.id = (
+              select h2.id
+              from project_health_snapshot h2
+              where h2.project_id = h.project_id
+              order by h2.snapshot_time desc, h2.created_time desc
+              limit 1
+          )
+    </select>
+</mapper>

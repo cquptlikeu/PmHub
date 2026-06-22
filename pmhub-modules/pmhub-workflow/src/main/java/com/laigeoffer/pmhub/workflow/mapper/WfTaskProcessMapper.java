@@ -7,12 +7,14 @@ import com.laigeoffer.pmhub.base.core.enums.DataSourceType;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * @author canghe
  * @date 2023-02-28 10:10
  */
 @Mapper
-//@DataSource(DataSourceType.PROJECT)
+@DataSource(DataSourceType.PROJECT)
 public interface WfTaskProcessMapper extends BaseMapper<WfTaskProcess> {
     Integer selectStatusByTaskId(@Param("taskId") String taskId);
     Integer selectStatusByTaskId2(@Param("taskId") String taskId);
@@ -23,5 +25,6 @@ public interface WfTaskProcessMapper extends BaseMapper<WfTaskProcess> {
     int updateProcessState2(@Param("dataId") String dataId);
     int updateProviderStatus(@Param("providerId") String providerId);
     String selectLinkRecordsId(@Param("materialId") String materialId);
+    List<WfTaskProcess> selectProjectRiskCandidates(@Param("projectId") String projectId);
 
 }

@@ -1,6 +1,6 @@
 package com.laigeoffer.pmhub.api.workflow;
 
-import com.laigeoffer.pmhub.api.workflow.factory.ProcessFeignFallbackFactory;
+import com.laigeoffer.pmhub.api.workflow.factory.DeployFeignFallbackFactory;
 import com.laigeoffer.pmhub.base.core.constant.SecurityConstants;
 import com.laigeoffer.pmhub.base.core.constant.ServiceNameConstants;
 import com.laigeoffer.pmhub.base.core.core.domain.R;
@@ -8,6 +8,7 @@ import com.laigeoffer.pmhub.base.core.core.domain.dto.ApprovalSetDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
  * @description 流程部署服务
  * @create 2024-04-24-22:38
  */
-@FeignClient(contextId = "deployFeignService", value = ServiceNameConstants.WORKFLOW_SERVICE, fallbackFactory = ProcessFeignFallbackFactory.class)
+@FeignClient(contextId = "deployFeignService", value = ServiceNameConstants.WORKFLOW_SERVICE, fallbackFactory = DeployFeignFallbackFactory.class)
 public interface DeployFeignService {
 
     /**
@@ -26,7 +27,7 @@ public interface DeployFeignService {
      * @return
      */
     @PostMapping("/workflow/deploy/updateApprovalSet")
-    R<?> updateApprovalSet(ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+    R<?> updateApprovalSet(@RequestBody ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 
     /**
@@ -35,7 +36,7 @@ public interface DeployFeignService {
      * @return
      */
     @PostMapping("/workflow/deploy/updateApprovalSet2")
-    R<?> updateApprovalSet2(ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+    R<?> updateApprovalSet2(@RequestBody ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 
     /**
@@ -52,7 +53,7 @@ public interface DeployFeignService {
      * @return
      */
     @PostMapping("/workflow/deploy/insertOrUpdateApprovalSet")
-    R<Boolean> insertOrUpdateApprovalSet(ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+    R<Boolean> insertOrUpdateApprovalSet(@RequestBody ApprovalSetDTO approvalSetDTO, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 
     /**

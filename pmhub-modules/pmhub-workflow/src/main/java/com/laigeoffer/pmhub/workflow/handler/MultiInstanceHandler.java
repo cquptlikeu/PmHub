@@ -48,7 +48,7 @@ public class MultiInstanceHandler {
                     .stream().map(item -> item.substring(4)).collect(Collectors.toList());
                 if ("ROLES".equals(dataType)) {
                  /*   groups.forEach(item -> {
-                        List<String> userIds = wfCopyMapper.selectUserIdsByRoleId(Long.parseLong(item))
+                        List<String> userIds = workflowSystemService.selectUserIdsByRoleId(Long.parseLong(item))
                             .stream().map(String::valueOf).collect(Collectors.toList());
                         candidateUserIds.addAll(userIds);
                     });*/
@@ -58,7 +58,7 @@ public class MultiInstanceHandler {
                         candidateUserIds.addAll(userIds);
                     });
                 } else if ("DEPTS".equals(dataType)) {
-                    List<String> userIds = wfCopyMapper.selectUserIds(groups)
+                    List<String> userIds = workflowSystemService.selectUserIds(groups)
                         .stream().map(String::valueOf).collect(Collectors.toList());
                     candidateUserIds.addAll(userIds);
                 }

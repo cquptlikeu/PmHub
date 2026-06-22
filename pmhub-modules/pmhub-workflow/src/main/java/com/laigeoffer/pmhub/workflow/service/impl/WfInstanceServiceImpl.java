@@ -49,6 +49,7 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     private final IWfDeployFormService deployFormService;
     private final WfCopyMapper wfCopyMapper;
     private final WfTaskProcessMapper wfTaskProcessMapper;
+    private final WorkflowSystemService workflowSystemService;
 
     /**
      * 结束流程实例
@@ -153,10 +154,10 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                 taskVo.setCreateTime(taskInstance.getStartTime());
                 taskVo.setFinishTime(taskInstance.getEndTime());
                 if (StringUtils.isNotBlank(taskInstance.getAssignee())) {
-                    SysUser user = wfCopyMapper.selectUserById(Long.parseLong(taskInstance.getAssignee()));
+                    SysUser user = workflowSystemService.selectUserById(Long.parseLong(taskInstance.getAssignee()));
                     taskVo.setAssigneeId(user.getUserId());
                     taskVo.setAssigneeName(user.getNickName());
-                    SysDept sysDept = wfCopyMapper.selectDeptById(user.getDeptId());
+                    SysDept sysDept = workflowSystemService.selectDeptById(user.getDeptId());
                     if (sysDept != null) {
                         taskVo.setDeptName(sysDept.getDeptName());
                     }
@@ -167,17 +168,17 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                 for (HistoricIdentityLink identityLink : linksForTask) {
                     if ("candidate".equals(identityLink.getType())) {
                         if (StringUtils.isNotBlank(identityLink.getUserId())) {
-                            SysUser user = wfCopyMapper.selectUserById(Long.parseLong(identityLink.getUserId()));
+                            SysUser user = workflowSystemService.selectUserById(Long.parseLong(identityLink.getUserId()));
                             stringBuilder.append(user.getNickName()).append(",");
                         }
                         if (StringUtils.isNotBlank(identityLink.getGroupId())) {
                             if (identityLink.getGroupId().startsWith(TaskConstants.ROLE_GROUP_PREFIX)) {
                                 Long roleId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.ROLE_GROUP_PREFIX));
-                                SysRole role = wfCopyMapper.selectRoleById(roleId);
+                                SysRole role = workflowSystemService.selectRoleById(roleId);
                                 stringBuilder.append(role.getRoleName()).append(",");
                             } else if (identityLink.getGroupId().startsWith(TaskConstants.DEPT_GROUP_PREFIX)) {
                                 Long deptId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.DEPT_GROUP_PREFIX));
-                                SysDept dept = wfCopyMapper.selectDeptById(deptId);
+                                SysDept dept = workflowSystemService.selectDeptById(deptId);
                                 stringBuilder.append(dept.getDeptName()).append(",");
                             }
                         }

@@ -97,6 +97,17 @@ public class ProjectResVO {
 
     private Integer notifyDay;
 
+    private Integer healthScore;
+
+    private String healthLevel;
+
+    private Integer riskCount;
+
+    private Integer highRiskCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date latestAnalyzeTime;
+
     public String getProjectId() {
         return projectId;
     }
@@ -311,5 +322,45 @@ public class ProjectResVO {
 
     public void setNotifyDay(Integer notifyDay) {
         this.notifyDay = notifyDay;
+    }
+
+    public Integer getHealthScore() {
+        return healthScore;
+    }
+
+    public void setHealthScore(Integer healthScore) {
+        this.healthScore = healthScore;
+    }
+
+    public String getHealthLevel() {
+        return healthLevel;
+    }
+
+    public void setHealthLevel(String healthLevel) {
+        this.healthLevel = healthLevel;
+    }
+
+    public Integer getRiskCount() {
+        return riskCount;
+    }
+
+    public void setRiskCount(Integer riskCount) {
+        this.riskCount = riskCount;
+    }
+
+    public Integer getHighRiskCount() {
+        return highRiskCount;
+    }
+
+    public void setHighRiskCount(Integer highRiskCount) {
+        this.highRiskCount = highRiskCount;
+    }
+
+    public Date getLatestAnalyzeTime() {
+        return latestAnalyzeTime;
+    }
+
+    public void setLatestAnalyzeTime(Date latestAnalyzeTime) {
+        this.latestAnalyzeTime = latestAnalyzeTime;
     }
 }

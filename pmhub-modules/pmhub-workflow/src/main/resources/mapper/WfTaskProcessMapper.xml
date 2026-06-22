@@ -55,4 +55,29 @@
     <select id="selectLinkRecordsId" resultType="java.lang.String">
         select link_records_id from pmhub_materials_change_records where id = #{materialId}
     </select>
+    <select id="selectProjectRiskCandidates" resultType="com.laigeoffer.pmhub.base.core.core.domain.entity.WfTaskProcess">
+        select p.id,
+               p.approved,
+               p.extra_id,
+               p.instance_id,
+               p.deployment_id,
+               p.definition_id,
+               p.task_id,
+               p.created_by,
+               p.created_time,
+               p.updated_by,
+               p.updated_time,
+               p.type,
+               p.url
+        from pmhub_project_task_process p
+        where (p.type = 'project' and p.extra_id = #{projectId})
+           or (p.type = 'task'
+               and exists (
+                   select 1
+                   from pmhub_project_task t
+                   where t.id = p.extra_id
+                     and t.project_id = #{projectId}
+                     and t.deleted = 0
+               ))
+    </select>
 </mapper>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laigeoffer.pmhub.project.ai.mapper.ProjectRiskRecordMapper">
+
+    <select id="selectByProjectId" parameterType="java.lang.String"
+            resultType="com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord">
+        select id,
+               project_id,
+               analysis_task_id,
+               risk_type,
+               risk_level,
+               source_type,
+               source_id,
+               title,
+               reason,
+               suggestion,
+               status,
+               created_by,
+               created_time,
+               updated_by,
+               updated_time
+        from project_risk_record
+        where project_id = #{projectId}
+        order by created_time desc, id desc
+    </select>
+
+    <select id="selectByAnalysisTaskId" parameterType="java.lang.String"
+            resultType="com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord">
+        select id,
+               project_id,
+               analysis_task_id,
+               risk_type,
+               risk_level,
+               source_type,
+               source_id,
+               title,
+               reason,
+               suggestion,
+               status,
+               created_by,
+               created_time,
+               updated_by,
+               updated_time
+        from project_risk_record
+        where analysis_task_id = #{analysisTaskId}
+        order by created_time desc, id desc
+    </select>
+</mapper>

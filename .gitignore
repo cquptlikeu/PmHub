@@ -35,18 +35,56 @@ nbbuild/
 nbdist/
 .nb-gradle/
 
+### VS Code ###
+.vscode/
+
+######################################################################
+# Node.js (Frontend)
+
+node_modules/
+dist/
+package-lock.json
+yarn.lock
+
+######################################################################
+# Output & Logs
+
+out/
+logs/
+*.log
+hs_err_pid*
+
+######################################################################
+# Environment & Secrets
+
+.env
+.env.local
+.env.*.local
+application-prod.yml
+
+######################################################################
+# OS Files
+
+.DS_Store
+*/.DS_Store
+Thumbs.db
+
+######################################################################
+# Claude AI
+
+.claude/
+
+######################################################################
+# Docker (sensitive configs)
+
+docker/netaddr.text
+
 ######################################################################
 # Others
-*.log
 *.xml.versionsBackup
 *.swp
+*.jar
 
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
-
-.DS_store
-*/.DS_store
-application-prod.yml
-
-*.jar

@@ -290,8 +290,10 @@ public class ProjectTaskController {
     public AjaxResult updateApprovalSet(@RequestBody ApprovalSetDTO approvalSetDTO) {
         // 审批相关流程远程调用
         R<?> result = wfDeployService.updateApprovalSet2(approvalSetDTO, SecurityConstants.INNER);
-        if (StringUtils.isNull(result) || StringUtils.isNull(result.getData())
-                || R.fail().equals(result.getData())) {
+        if (StringUtils.isNull(result) || R.isError(result) || !Boolean.TRUE.equals(result.getData())) {
+            if (!StringUtils.isNull(result) && StringUtils.isNotBlank(result.getMsg())) {
+                return AjaxResult.error(result.getMsg());
+            }
             return AjaxResult.error("远程调用审批服务失败");
         }
         return AjaxResult.success();
@@ -310,8 +312,10 @@ public class ProjectTaskController {
         ProjectProcessDTO request = new ProjectProcessDTO(taskId, processDefId, url, variables);
         // 掉流程相关远程调用
         R<?> result = processService.startTaskProcessByDefId(request,SecurityConstants.INNER);
-        if (StringUtils.isNull(result) || StringUtils.isNull(result.getData())
-                || R.fail().equals(result.getData())) {
+        if (StringUtils.isNull(result) || R.isError(result) || !Boolean.TRUE.equals(result.getData())) {
+            if (!StringUtils.isNull(result) && StringUtils.isNotBlank(result.getMsg())) {
+                return AjaxResult.error(result.getMsg());
+            }
             return AjaxResult.error("远程调用审批服务失败");
         }
         return AjaxResult.success("流程启动成功");
@@ -326,8 +330,10 @@ public class ProjectTaskController {
     @Anonymous
     public AjaxResult updateApprovalSet() {
         R<?> result = wfDeployService.insertApprovalSet(SecurityConstants.INNER);
-        if (StringUtils.isNull(result) || StringUtils.isNull(result.getData())
-                || R.fail().equals(result.getData())) {
+        if (StringUtils.isNull(result) || R.isError(result) || !Boolean.TRUE.equals(result.getData())) {
+            if (!StringUtils.isNull(result) && StringUtils.isNotBlank(result.getMsg())) {
+                return AjaxResult.error(result.getMsg());
+            }
             return AjaxResult.error("远程调用审批服务失败");
         }
         return AjaxResult.success();

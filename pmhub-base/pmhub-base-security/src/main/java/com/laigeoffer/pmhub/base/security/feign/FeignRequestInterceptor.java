@@ -7,6 +7,7 @@ import com.laigeoffer.pmhub.base.core.utils.ip.IpUtils;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -22,7 +23,11 @@ public class FeignRequestInterceptor implements RequestInterceptor {
     @Override
     //- apply()：Feign 拦截器核心方法，每次 Feign 调用前执行
     public void apply(RequestTemplate requestTemplate) {
-        HttpServletRequest httpServletRequest = ServletUtils.getRequest();
+        ServletRequestAttributes requestAttributes = ServletUtils.getRequestAttributes();
+        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+            return;
+        }
+        HttpServletRequest httpServletRequest = requestAttributes.getRequest();
         //getHeaders()：提取原始请求的所有请求头
         Map<String, String> headers = ServletUtils.getHeaders(httpServletRequest);
         // 传递用户信息请求头，防止丢失
@@ -62,6 +67,6 @@ public class FeignRequestInterceptor implements RequestInterceptor {
          *
          *   简单来说：这行代码让微服务之间传递"谁在访问"的信息，避免 IP 在链路中丢失
          */
-        requestTemplate.header("X-Forwarded-For", IpUtils.getIpAddr());
+        requestTemplate.header("X-Forwarded-For", IpUtils.getIpAddr(httpServletRequest));
     }
 }

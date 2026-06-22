@@ -12,6 +12,8 @@ import com.laigeoffer.pmhub.base.core.core.domain.entity.WfTaskProcess;
 import com.laigeoffer.pmhub.workflow.domain.vo.TaskCompletedStateVO;
 import com.laigeoffer.pmhub.workflow.enums.TaskCompletedStateEnum;
 import com.laigeoffer.pmhub.workflow.mapper.*;
+import com.laigeoffer.pmhub.workflow.service.impl.WorkflowProjectService;
+import com.laigeoffer.pmhub.workflow.service.impl.WorkflowSystemService;
 import com.laigeoffer.pmhub.workflow.utils.ProcessUtils;
 import org.flowable.bpmn.constants.BpmnXMLConstants;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
@@ -46,6 +48,12 @@ public class GlobalProcessEndListener extends AbstractFlowableEngineEventListene
 
     @Autowired
     private WfMaterialsScrappedProcessMapper wfMaterialsScrappedProcessMapper;
+
+    @Autowired
+    private WorkflowProjectService workflowProjectService;
+
+    @Autowired
+    private WorkflowSystemService workflowSystemService;
 //    @Autowired
 //    private MaterialsChangeRecordsCountService materialsChangeRecordsCountService;
 //    @Autowired
@@ -74,7 +82,7 @@ public class GlobalProcessEndListener extends AbstractFlowableEngineEventListene
         String type = processInstance.getVariable(ProcessUtils.APPROVAL_TYPE).toString();
 
         // 获取申请人的微信
-        SysUser sysUser = wfCopyMapper.selectUserById(Long.parseLong(processInstance.getVariable(BpmnXMLConstants.ATTRIBUTE_EVENT_START_INITIATOR).toString()));
+        SysUser sysUser = workflowSystemService.selectUserById(Long.parseLong(processInstance.getVariable(BpmnXMLConstants.ATTRIBUTE_EVENT_START_INITIATOR).toString()));
         String createWxName = sysUser.getUserWxName();
 
         String definitionId = processInstance.getProcessDefinitionKey();
@@ -90,12 +98,10 @@ public class GlobalProcessEndListener extends AbstractFlowableEngineEventListene
         }
         // 审批通过更新任务状态为已完成
         if (TaskCompletedStateEnum.PASS.toString().equals(taskCompletedStateVO.getTaskTypeDesc())) {
-            LambdaQueryWrapper<WfTaskProcess> qw = new LambdaQueryWrapper<>();
-            qw.eq(WfTaskProcess::getInstanceId, instId).eq(WfTaskProcess::getType, type);
-            WfTaskProcess wfTaskProcess = wfTaskProcessMapper.selectOne(qw);
+            WfTaskProcess wfTaskProcess = workflowProjectService.selectByInstanceIdAndType(instId, type);
             if (ObjectUtil.isNotEmpty(wfTaskProcess)) {
                 if (ProjectStatusEnum.TASK.getStatusName().equals(type)) {
-                    wfTaskProcessMapper.updateTaskStatus(wfTaskProcess.getExtraId());
+                    workflowProjectService.updateTaskApprovedStatus(wfTaskProcess.getExtraId());
                     LogFactory.get().info("更新项目任务id:{}", wfTaskProcess.getExtraId());
                 } else if (ProcessUtils.SUPPLIER_APPROVAL_TYPE.equals(type)) {
                     wfTaskProcessMapper.updateProviderStatus(wfTaskProcess.getExtraId());
@@ -131,16 +137,14 @@ public class GlobalProcessEndListener extends AbstractFlowableEngineEventListene
 
         }
         if (TaskCompletedStateEnum.REJECT.toString().equals(taskCompletedStateVO.getTaskTypeDesc())) {
-            LambdaQueryWrapper<WfTaskProcess> qw = new LambdaQueryWrapper<>();
-            qw.eq(WfTaskProcess::getInstanceId, instId).eq(WfTaskProcess::getType, type);
-            WfTaskProcess wfTaskProcess = wfTaskProcessMapper.selectOne(qw);
+            WfTaskProcess wfTaskProcess = workflowProjectService.selectByInstanceIdAndType(instId, type);
             if (ObjectUtil.isNotEmpty(wfTaskProcess)) {
                 if (!ProjectStatusEnum.TASK.getStatusName().equals(type) && !ProcessUtils.SUPPLIER_APPROVAL_TYPE.equals(type)) {
                     wfTaskProcessMapper.updateProcessState2(wfTaskProcess.getExtraId());
                     LogFactory.get().info("更新单据编号id:{}", wfTaskProcess.getExtraId());
                 } else {
                     // 将任务状态改为未开始
-                    wfTaskProcessMapper.updateTaskStatus2(wfTaskProcess.getExtraId());
+                    workflowProjectService.resetTaskStatus(wfTaskProcess.getExtraId());
                     LogFactory.get().info("更新项目任务状态id:{}", wfTaskProcess.getExtraId());
                 }
             }
@@ -189,7 +193,7 @@ public class GlobalProcessEndListener extends AbstractFlowableEngineEventListene
         wfTaskMessageDeals.forEach(a -> {
             // TODO: 2024.04.25  暂时关闭企微通知
 //            RocketMqUtils.cleanMessage(a.getTaskId() + "_" + a.getAssignee());
-//            OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(a.getTaskId() + "_" + a.getAssignee(), OAMessageStatusEnum.DEAL.getStatus(), wfCopyMapper.selectUserById(Long.valueOf(a.getAssignee())).getUserName())), OAUtils.ALTER_MESSAGE_API);
+//            OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(a.getTaskId() + "_" + a.getAssignee(), OAMessageStatusEnum.DEAL.getStatus(), workflowSystemService.selectUserById(Long.valueOf(a.getAssignee())).getUserName())), OAUtils.ALTER_MESSAGE_API);
         });
         wfTaskMessageDealMapper.delete(queryWrapper);
         LogFactory.get().info("流程完成监听器------------------------End---------------------->");

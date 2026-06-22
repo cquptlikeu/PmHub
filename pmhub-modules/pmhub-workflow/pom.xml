@@ -75,6 +75,11 @@
 
         <dependency>
             <groupId>com.laigeoffer.pmhub-cloud</groupId>
+            <artifactId>pmhub-api-workflow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.laigeoffer.pmhub-cloud</groupId>
             <artifactId>pmhub-base-swagger</artifactId>
         </dependency>
 
@@ -90,6 +95,12 @@
 <!--            <groupId>com.laigeoffer.pmhub-cloud</groupId>-->
 <!--            <artifactId>pmhub-base-notice</artifactId>-->
 <!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 

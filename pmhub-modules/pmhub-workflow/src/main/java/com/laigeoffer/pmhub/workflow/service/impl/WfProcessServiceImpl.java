@@ -27,6 +27,7 @@ import com.laigeoffer.pmhub.workflow.common.constant.TaskConstants;
 import com.laigeoffer.pmhub.workflow.core.FormConf;
 import com.laigeoffer.pmhub.workflow.core.domain.ProcessQuery;
 import com.laigeoffer.pmhub.workflow.domain.WfDeployForm;
+import com.laigeoffer.pmhub.workflow.domain.WfForm;
 import com.laigeoffer.pmhub.workflow.domain.WfMaterialsScrappedProcess;
 import com.laigeoffer.pmhub.base.core.core.domain.entity.WfTaskProcess;
 import com.laigeoffer.pmhub.workflow.domain.vo.*;
@@ -34,6 +35,7 @@ import com.laigeoffer.pmhub.workflow.factory.FlowServiceFactory;
 import com.laigeoffer.pmhub.workflow.flow.FlowableUtils;
 import com.laigeoffer.pmhub.workflow.mapper.WfCopyMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfDeployFormMapper;
+import com.laigeoffer.pmhub.workflow.mapper.WfFormMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfMaterialsScrappedProcessMapper;
 import com.laigeoffer.pmhub.workflow.mapper.WfTaskProcessMapper;
 import com.laigeoffer.pmhub.workflow.service.IWfDeployService;
@@ -80,12 +82,16 @@ import java.util.stream.Collectors;
 @Service
 public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProcessService {
 
+    private static final String EMPTY_START_FORM_CONTENT = "{\"formRef\":\"elForm\",\"formModel\":\"formData\",\"size\":\"medium\",\"labelPosition\":\"right\",\"labelWidth\":100,\"formRules\":\"rules\",\"gutter\":15,\"disabled\":false,\"span\":24,\"formBtns\":true,\"fields\":[]}";
+
     private final IWfTaskService wfTaskService;
     private final WfCopyMapper wfCopyMapper;
     private final WfDeployFormMapper deployFormMapper;
     private final WfTaskProcessMapper wfTaskProcessMapper;
     private final IWfDeployService deployService;
     private final WfMaterialsScrappedProcessMapper wfMaterialsScrappedProcessMapper;
+    private final WfFormMapper wfFormMapper;
+    private final WorkflowProjectService workflowProjectService;
 //    private final MaterialsChangeRecordsMapper materialsChangeRecordsMapper;
 //    private final MaterialsUselessMapper materialsUselessMapper;
 
@@ -223,10 +229,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 Task t = taskService.createTaskQuery().taskId(task.getTaskId()).singleResult();
                 if (t != null) {
                     if (StringUtils.isNotBlank(t.getAssignee())) {
-                        SysUser sysUser = wfCopyMapper.selectUserById(Long.valueOf(t.getAssignee()));
+                        SysUser sysUser = workflowSystemService.selectUserById(Long.valueOf(t.getAssignee()));
                         task.setAssigneeName(sysUser.getNickName());
                         task.setTaskName(t.getName());
-                        SysDept sysDept = wfCopyMapper.selectDeptById(sysUser.getDeptId());
+                        SysDept sysDept = workflowSystemService.selectDeptById(sysUser.getDeptId());
                         if (sysDept != null) {
                             task.setDeptName(sysDept.getDeptName());
                         }
@@ -321,10 +327,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(task.getProcessInstanceId())
                 .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             flowTask.setStartUserId(startUser.getNickName());
             flowTask.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 flowTask.setStartDeptName(sysDept.getDeptName());
             }
@@ -371,10 +377,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                     .processInstanceId(task.getProcessInstanceId())
                     .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             taskVo.setStartUserId(startUser.getNickName());
             taskVo.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 taskVo.setStartDeptName(sysDept.getDeptName());
             }
@@ -422,10 +428,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(task.getProcessInstanceId())
                 .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             flowTask.setStartUserId(startUser.getNickName());
             flowTask.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 flowTask.setStartDeptName(sysDept.getDeptName());
             }
@@ -469,10 +475,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                     .processInstanceId(task.getProcessInstanceId())
                     .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             flowTask.setStartUserId(startUser.getNickName());
             flowTask.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 flowTask.setStartDeptName(sysDept.getDeptName());
             }
@@ -522,10 +528,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(histTask.getProcessInstanceId())
                 .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             flowTask.setStartUserId(startUser.getNickName());
             flowTask.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 flowTask.setStartDeptName(sysDept.getDeptName());
             }
@@ -581,10 +587,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                     .processInstanceId(histTask.getProcessInstanceId())
                     .singleResult();
-            SysUser startUser = wfCopyMapper.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
+            SysUser startUser = workflowSystemService.selectUserById(Long.parseLong(historicProcessInstance.getStartUserId()));
             flowTask.setStartUserId(startUser.getNickName());
             flowTask.setStartUserName(startUser.getNickName());
-            SysDept sysDept = wfCopyMapper.selectDeptById(startUser.getDeptId());
+            SysDept sysDept = workflowSystemService.selectDeptById(startUser.getDeptId());
             if (sysDept != null) {
                 flowTask.setStartDeptName(sysDept.getDeptName());
             }
@@ -604,11 +610,29 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             throw new RuntimeException("获取流程设计失败！");
         }
         StartEvent startEvent = ModelUtils.getStartEvent(bpmnModel);
+        if (ObjectUtil.isNull(startEvent)) {
+            throw new ServiceException("Start event does not exist");
+        }
+        if (StringUtils.isBlank(startEvent.getFormKey())) {
+            return EMPTY_START_FORM_CONTENT;
+        }
         WfDeployFormVo deployFormVo = deployFormMapper.selectVoOne(new LambdaQueryWrapper<WfDeployForm>()
             .eq(WfDeployForm::getDeployId, deployId)
             .eq(WfDeployForm::getFormKey, startEvent.getFormKey())
             .eq(WfDeployForm::getNodeKey, startEvent.getId()));
-        return deployFormVo.getContent();
+        if (ObjectUtil.isNotNull(deployFormVo) && StringUtils.isNotBlank(deployFormVo.getContent())) {
+            return deployFormVo.getContent();
+        }
+
+        Long formId = Convert.toLong(StringUtils.substringAfter(startEvent.getFormKey(), "key_"));
+        if (ObjectUtil.isNull(formId)) {
+            throw new ServiceException("Start form key is invalid");
+        }
+        WfForm wfForm = wfFormMapper.selectById(formId);
+        if (ObjectUtil.isNull(wfForm) || StringUtils.isBlank(wfForm.getContent())) {
+            throw new ServiceException("Start form content not found. Please redeploy or rebind the approval flow.");
+        }
+        return wfForm.getContent();
     }
 
     /**
@@ -840,9 +864,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @return
      */
     private WfTaskProcess getWfTaskProcess(String extraId, String type) {
-        LambdaQueryWrapper<WfTaskProcess> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WfTaskProcess::getExtraId, extraId).eq(WfTaskProcess::getType, type);
-        WfTaskProcess wfTaskProcess = wfTaskProcessMapper.selectOne(queryWrapper);
+        WfTaskProcess wfTaskProcess = workflowProjectService.selectTaskProcess(extraId, type);
         MaterialsApprovalSetVO materialsApprovalSetVO;
         if (ProjectStatusEnum.TASK.getStatusName().equals(type)) {
             materialsApprovalSetVO = deployService.queryApprovalSet(type, extraId);
@@ -866,7 +888,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                     }
                     if ("3".equals(list.get(0).getType())) {
                         // 将任务状态改为进行中
-                        wfTaskProcessMapper.updateTaskStatus3(extraId);
+                        workflowProjectService.markTaskInProgress(extraId);
                     }
                 }
             }
@@ -879,7 +901,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         } else {
             if (ProjectStatusEnum.PROJECT.getStatusName().equals(type) || ProjectStatusEnum.TASK.getStatusName().equals(type)) {
                 // 将任务状态改为进行中
-                wfTaskProcessMapper.updateTaskStatus3(extraId);
+                workflowProjectService.markTaskInProgress(extraId);
             }
 //            if (types.contains(type)) {
 //                MaterialsChangeRecords materialsChangeRecords = materialsChangeRecordsMapper.selectById(extraId);
@@ -888,7 +910,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 //                }
 //            }
             // 新增
-            wfTaskProcess = deployService.insertWfTaskProcess(extraId, type, materialsApprovalSetVO.getApproved()
+            wfTaskProcess = workflowProjectService.upsertTaskProcess(extraId, type, materialsApprovalSetVO.getApproved()
                     , materialsApprovalSetVO.getDefinitionId(), materialsApprovalSetVO.getDeploymentId());
         }
         return wfTaskProcess;
@@ -944,7 +966,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
         }
         wfTaskProcess.setUrl(url);
-        wfTaskProcessMapper.updateById(wfTaskProcess);
+        workflowProjectService.updateTaskProcessInstanceInfo(wfTaskProcess);
     }
 
     /**
@@ -991,8 +1013,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @param userId
      */
     private void queryLeaderId(Map<String, Object> variables, Long userId) {
-        SysUser sysUser = wfCopyMapper.selectUserById(userId);
-        if (StringUtils.isNotBlank(sysUser.getLeaderId())) {
+        SysUser sysUser = workflowSystemService.selectUserById(userId);
+        if (sysUser != null && StringUtils.isNotBlank(sysUser.getLeaderId())) {
             // 直属上级
             variables.put(ProcessUtils.LEADER_LIST, Arrays.asList(sysUser.getLeaderId().split(",")));
         }
@@ -1092,7 +1114,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      */
     private void startTaskProcess(String taskId, ProcessDefinition procDef, String url, Map<String, Object> variables) {
         // 任务审批相关逻辑
-        Integer status = wfTaskProcessMapper.selectStatusByTaskId(taskId);
+        Integer status = workflowProjectService.selectTaskExecuteStatus(taskId);
         if (!ProjectTaskStatusEnum.FINISHED.getStatus().equals(status)) {
             throw new ServiceException("执行状态为已完成才能发起审批");
         }
@@ -1421,11 +1443,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                         if (StringUtils.isNotBlank(identityLink.getGroupId())) {
                             if (identityLink.getGroupId().startsWith(TaskConstants.ROLE_GROUP_PREFIX)) {
                                 Long roleId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.ROLE_GROUP_PREFIX));
-                                SysRole role = wfCopyMapper.selectRoleById(roleId);
+                                SysRole role = workflowSystemService.selectRoleById(roleId);
                                 stringBuilder.append(role.getRoleName()).append(",");
                             } else if (identityLink.getGroupId().startsWith(TaskConstants.DEPT_GROUP_PREFIX)) {
                                 Long deptId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.DEPT_GROUP_PREFIX));
-                                SysDept dept = wfCopyMapper.selectDeptById(deptId);
+                                SysDept dept = workflowSystemService.selectDeptById(deptId);
                                 stringBuilder.append(dept.getDeptName()).append(",");
                             }
                         }

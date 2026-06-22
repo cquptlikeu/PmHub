@@ -11,41 +11,42 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 用户服务降级处理
+ * Workflow deployment service fallback.
  *
  * @author canghe
  */
 @Component
 public class DeployFeignFallbackFactory implements FallbackFactory<DeployFeignService> {
+
     private static final Logger log = LoggerFactory.getLogger(DeployFeignFallbackFactory.class);
 
     @Override
     public DeployFeignService create(Throwable throwable) {
-        log.error("流程部署服务调用失败:{}", throwable.getMessage());
+        log.error("workflow deploy service call failed: {}", throwable.getMessage(), throwable);
         return new DeployFeignService() {
             @Override
             public R<?> updateApprovalSet(ApprovalSetDTO approvalSetDTO, String source) {
-                return R.fail("更新审批设置失败:" + throwable.getMessage());
+                return R.fail("远程调用审批服务失败: " + throwable.getMessage());
             }
 
             @Override
             public R<?> updateApprovalSet2(ApprovalSetDTO approvalSetDTO, String source) {
-                return R.fail("更新审批设置2失败:" + throwable.getMessage());
+                return R.fail("远程调用审批服务失败: " + throwable.getMessage());
             }
 
             @Override
             public R<?> selectList(List<String> taskId, String source) {
-                return R.fail("查询流程部署关联表单信息失败:" + throwable.getMessage());
+                return R.fail("远程调用审批服务失败: " + throwable.getMessage());
             }
 
             @Override
-            public R<Boolean> insertOrUpdateApprovalSet(ApprovalSetDTO approvalSetDTO, String source)  {
-                return R.fail("添加&更新任务审批设置失败:" + throwable.getMessage());
+            public R<Boolean> insertOrUpdateApprovalSet(ApprovalSetDTO approvalSetDTO, String source) {
+                return R.fail(Boolean.FALSE, "远程调用审批服务失败: " + throwable.getMessage());
             }
 
             @Override
             public R<?> insertApprovalSet(String source) {
-                return R.fail("添加任务审批设置失败:" + throwable.getMessage());
+                return R.fail("远程调用审批服务失败: " + throwable.getMessage());
             }
         };
     }

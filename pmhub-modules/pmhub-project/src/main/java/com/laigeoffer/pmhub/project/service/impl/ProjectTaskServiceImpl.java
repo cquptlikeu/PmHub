@@ -23,6 +23,7 @@ import com.laigeoffer.pmhub.base.core.enums.ProjectTaskPriorityEnum;
 import com.laigeoffer.pmhub.base.core.enums.ProjectTaskStatusEnum;
 import com.laigeoffer.pmhub.base.core.exception.ServiceException;
 import com.laigeoffer.pmhub.base.core.utils.DateUtils;
+import com.laigeoffer.pmhub.base.core.utils.uuid.IdUtils;
 import com.laigeoffer.pmhub.base.core.utils.file.FileUtils;
 import com.laigeoffer.pmhub.base.security.utils.SecurityUtils;
 import com.laigeoffer.pmhub.project.domain.*;
@@ -34,8 +35,6 @@ import com.laigeoffer.pmhub.project.mapper.*;
 import com.laigeoffer.pmhub.project.service.ProjectLogService;
 import com.laigeoffer.pmhub.project.service.ProjectTaskService;
 import com.laigeoffer.pmhub.project.service.task.QueryTaskLogFactory;
-import io.seata.core.context.RootContext;
-import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -344,11 +343,9 @@ public class ProjectTaskServiceImpl extends ServiceImpl<ProjectTaskMapper, Proje
     }
 
     @Override
-    @GlobalTransactional(name = "pmhub-project-addTask",rollbackFor = Exception.class) //seata分布式事务，AT模式
+    @Transactional(rollbackFor = Exception.class)
     public String add(TaskReqVO taskReqVO) {
-        // xid 全局事务id的检查（方便查看）
-        String xid = RootContext.getXID();
-        log.info("---------------开始新建任务: "+"\t"+"xid: "+xid);
+        log.info("---------------开始新建任务");
 
         if (ProjectStatusEnum.PAUSE.getStatus().equals(projectTaskMapper.queryProjectStatus(taskReqVO.getProjectId()))) {
             throw new ServiceException("归属项目已暂停，无法新增任务");
@@ -360,6 +357,7 @@ public class ProjectTaskServiceImpl extends ServiceImpl<ProjectTaskMapper, Proje
             projectTask.setTaskPid(taskReqVO.getTaskId());
         }
         BeanUtils.copyProperties(taskReqVO, projectTask);
+        projectTask.setId(IdUtils.fastSimpleUUID());
         projectTask.setCreatedBy(SecurityUtils.getUsername());
         projectTask.setCreatedTime(new Date());
         projectTask.setUpdatedBy(SecurityUtils.getUsername());
@@ -379,17 +377,23 @@ public class ProjectTaskServiceImpl extends ServiceImpl<ProjectTaskMapper, Proje
         // 4、任务指派消息提醒
         extracted(taskReqVO.getTaskName(), taskReqVO.getUserId(), SecurityUtils.getUsername(), projectTask.getId());
 
-        // 5、添加或更新审批设置（远程调用 pmhub-workflow 微服务）
-        ApprovalSetDTO approvalSetDTO = new ApprovalSetDTO(projectTask.getId(), ProjectStatusEnum.TASK.getStatusName(),
-                taskReqVO.getApproved(), taskReqVO.getDefinitionId(), taskReqVO.getDeploymentId());
-        R<Boolean> result = wfDeployService.insertOrUpdateApprovalSet(approvalSetDTO, SecurityConstants.INNER);
+        // 5. Sync approval settings only when approval is required.
+        if (isApprovalRequired(taskReqVO)) {
+            ApprovalSetDTO approvalSetDTO = new ApprovalSetDTO(projectTask.getId(), ProjectStatusEnum.TASK.getStatusName(),
+                    taskReqVO.getApproved(), taskReqVO.getDefinitionId(), taskReqVO.getDeploymentId());
+            R<Boolean> result = wfDeployService.insertOrUpdateApprovalSet(approvalSetDTO, SecurityConstants.INNER);
 
-        if (Objects.isNull(result) || Objects.isNull(result.getData())
-                || R.fail().equals(result.getData())) {
-            throw  new ServiceException("远程调用审批服务失败");
+            if (Objects.isNull(result) || R.isError(result) || !Boolean.TRUE.equals(result.getData())) {
+                String message = Objects.isNull(result) ? null : result.getMsg();
+                throw new ServiceException(StringUtils.defaultIfBlank(message, "远程调用审批服务失败"));
+            }
         }
-        log.info("---------------结束新建任务: "+"\t"+"xid: "+xid);
+        log.info("---------------结束新建任务");
         return projectTask.getId();
+    }
+
+    private boolean isApprovalRequired(TaskReqVO taskReqVO) {
+        return "0".equals(taskReqVO.getApproved());
     }
 
     private void extracted(String taskName, Long userId, String username, String taskId) {
@@ -791,6 +795,7 @@ public class ProjectTaskServiceImpl extends ServiceImpl<ProjectTaskMapper, Proje
             qw2.eq(ProjectStage::getProjectId, projectId).orderByAsc(ProjectStage::getStageCode);
             projectTask.setProjectStageId(projectStageMapper.selectList(qw2).get(0).getId());
             projectTask.setUserId(sysUser.getUserId());
+            projectTask.setId(IdUtils.fastSimpleUUID());
             projectTask.setCreatedBy(SecurityUtils.getUsername());
             projectTask.setCreatedTime(new Date());
             projectTask.setUpdatedBy(SecurityUtils.getUsername());

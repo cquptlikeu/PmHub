@@ -1,61 +1,69 @@
 <template>
-  <el-tabs v-model="activeName" @tab-click="handleClick" class="app-container" v-if="projectData !== null">
-    <el-tab-pane label="概况" name="概况">
-      <Overview :projectData="projectData" />
+  <el-tabs v-if="projectData" v-model="activeName" class="app-container">
+    <el-tab-pane label="概况" name="overview">
+      <Overview :project-data="projectData" />
     </el-tab-pane>
-    <el-tab-pane label="任务" name="任务">
-      <Task :projectData="projectData" />
+    <el-tab-pane label="任务" name="task">
+      <Task :project-data="projectData" />
     </el-tab-pane>
-    <el-tab-pane label="文件" name="文件">
-      <File :projectData="projectData" />
+    <el-tab-pane label="文件" name="file">
+      <File :project-data="projectData" />
     </el-tab-pane>
-    <el-tab-pane label="成员" name="成员">
-      <Member :projectData="projectData" />
+    <el-tab-pane label="成员" name="member">
+      <Member :project-data="projectData" />
     </el-tab-pane>
-    <el-tab-pane label="甘特图" name="甘特图">敬请期待</el-tab-pane>
+    <el-tab-pane v-if="showAiTab" label="AI 风险分析" name="ai">
+      <Ai :project-data="projectData" />
+    </el-tab-pane>
+    <el-tab-pane label="甘特图" name="gantt">敬请期待</el-tab-pane>
   </el-tabs>
 </template>
 
 <script>
-import Overview from "./components/Overview.vue"
-import Task from "./components/Task.vue"
-import File from "./components/File.vue"
-import Member from "./components/Member.vue"
-import { getProjectDetailApi } from "@/api/pmhub-project/my-project.js"
+import Overview from './components/Overview.vue'
+import Task from './components/Task.vue'
+import File from './components/File.vue'
+import Member from './components/Member.vue'
+import Ai from './components/Ai.vue'
+import auth from '@/plugins/auth'
+import { getProjectDetailApi } from '@/api/pmhub-project/my-project.js'
+
+const AI_PERMISSION_LIST = [
+  'project:ai:summary',
+  'project:ai:risks',
+  'project:ai:task',
+  'project:ai:analyze',
+  'project:ai:weeklyReportGenerate',
+  'project:ai:weeklyReportList'
+]
 
 export default {
-  name: "MyProjectInfo",
-  components: { Overview, Task, File, Member},
-  props: {},
+  name: 'MyProjectInfo',
+  components: { Overview, Task, File, Member, Ai },
   data() {
     return {
-      projectData: null, // 项目基本数据
-      activeName: "概况",
+      projectData: null,
+      activeName: 'overview'
     }
   },
-  methods: {
-    handleClick({ name }) {
-      if (name === "任务") {
-        // this.$router.push({ path: "/pmhub-project/my-task", query: { test: "test" } })
-      } else if (name === "物料") {
-       
-      }
-    },
+  computed: {
+    showAiTab() {
+      return auth.hasPermiOr(AI_PERMISSION_LIST)
+    }
   },
   created() {
-    // 第一种: 获取缓存的项目数据
-    // const data = this.$cache.session.getJSON("projectData")
-    // 第二种: 从接口获取数据
     const projectId = this.$route.query.projectId
+    if (this.$route.query.tab === 'ai' && this.showAiTab) {
+      this.activeName = 'ai'
+    }
     getProjectDetailApi(projectId)
       .then((res) => {
         this.projectData = res.data
       })
       .catch(() => {
-        // 退回上一级路由
-        this.$router.replace("/pmhub-project/my-project")
+        this.$router.replace('/pmhub-project/my-project')
       })
-  },
+  }
 }
 </script>
 

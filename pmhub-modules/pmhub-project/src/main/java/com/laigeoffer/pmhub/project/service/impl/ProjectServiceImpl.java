@@ -19,6 +19,8 @@ import com.laigeoffer.pmhub.base.core.exception.ServiceException;
 import com.laigeoffer.pmhub.base.core.utils.DateUtils;
 import com.laigeoffer.pmhub.base.core.utils.uuid.Seq;
 import com.laigeoffer.pmhub.base.security.utils.SecurityUtils;
+import com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot;
+import com.laigeoffer.pmhub.project.ai.mapper.ProjectHealthSnapshotMapper;
 import com.laigeoffer.pmhub.project.domain.*;
 import com.laigeoffer.pmhub.project.domain.vo.project.*;
 import com.laigeoffer.pmhub.project.domain.vo.project.log.LogVO;
@@ -57,6 +59,8 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     private ProjectCollectionMapper projectCollectionMapper;
     @Autowired
     private QueryProjectFactory queryProjectFactory;
+    @Autowired
+    private ProjectHealthSnapshotMapper projectHealthSnapshotMapper;
 
     @Resource
     private UserFeignService userFeignService;
@@ -304,11 +308,13 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
                     .map(userVO -> (SysUser) userVO)
                     .collect(Collectors.toList());
             Map<Long, List<SysUser>> map = sysUsers.stream().collect(Collectors.groupingBy(SysUser::getUserId));
+            Map<String, ProjectHealthSnapshot> healthSnapshotMap = queryLatestHealthSnapshots(list);
 
             list.forEach(a -> {
                 if (StringUtils.isNotBlank(a.getPrefix())) {
                     a.setProjectCode(a.getPrefix());
                 }
+                attachHealthSnapshot(a, healthSnapshotMap.get(a.getProjectId()));
                 a.setStatusName(ProjectStatusEnum.getStatusNameByStatus(a.getStatus()));
                 a.setPublishedName(a.getPublished() == 0 ? NO_PUBLISHED_NAME : PUBLISHED_NAME);
                 a.setProjectTypeName(a.getProjectType() == 0 ? PUBLIC : PRIVATE);
@@ -322,6 +328,35 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         }
 
         return new PageInfo<>(list);
+    }
+
+    private Map<String, ProjectHealthSnapshot> queryLatestHealthSnapshots(List<ProjectResVO> projects) {
+        List<String> projectIds = projects.stream()
+                .map(ProjectResVO::getProjectId)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(projectIds)) {
+            return Collections.emptyMap();
+        }
+        List<ProjectHealthSnapshot> snapshots = projectHealthSnapshotMapper.selectLatestByProjectIds(projectIds);
+        if (CollectionUtils.isEmpty(snapshots)) {
+            return Collections.emptyMap();
+        }
+        return snapshots.stream()
+                .filter(snapshot -> StringUtils.isNotBlank(snapshot.getProjectId()))
+                .collect(Collectors.toMap(ProjectHealthSnapshot::getProjectId, snapshot -> snapshot, (first, second) -> first));
+    }
+
+    private void attachHealthSnapshot(ProjectResVO project, ProjectHealthSnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        project.setHealthScore(snapshot.getHealthScore());
+        project.setHealthLevel(snapshot.getHealthLevel());
+        project.setRiskCount(snapshot.getRiskCount());
+        project.setHighRiskCount(snapshot.getHighRiskCount());
+        project.setLatestAnalyzeTime(snapshot.getSnapshotTime());
     }
 
     @Override

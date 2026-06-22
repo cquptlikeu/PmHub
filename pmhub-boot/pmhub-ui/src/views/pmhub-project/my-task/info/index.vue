@@ -389,6 +389,7 @@ export default {
       /* 描述模块 */
       description: "",
       timerId: undefined,
+      isHydratingTaskDetail: false,
 
       /* 基础信息模块 */
       basic: {
@@ -435,6 +436,7 @@ export default {
   },
   methods: {
     init() {
+      this.isHydratingTaskDetail = true
       // 获取任务详情
       getTaskDetailApi(this.taskId).then((res) => {
         this.projectId = res.data.projectId
@@ -472,6 +474,10 @@ export default {
         getStageListApi(this.projectId).then((res) => {
           this.stageOptions = res.data
         })
+      }).finally(() => {
+        this.$nextTick(() => {
+          this.isHydratingTaskDetail = false
+        })
       })
       getProjectListApi().then((res) => {
         // 获取项目列表
@@ -507,6 +513,9 @@ export default {
       }
     },
     updateTaskInfo() {
+      if (this.isHydratingTaskDetail) {
+        return
+      }
       // 修改任务
       const data = {
         taskName: this.taskName,
@@ -535,6 +544,9 @@ export default {
     },
     // 防抖
     updateTaskInfoStabilization() {
+      if (this.isHydratingTaskDetail) {
+        return
+      }
       if (this.timerId) {
         clearTimeout(this.timerId) // 停止之前的计时
       }

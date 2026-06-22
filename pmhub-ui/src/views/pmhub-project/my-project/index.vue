@@ -98,6 +98,18 @@
             <span v-else>{{ scope.row.statusName }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="健康状态" align="center" width="130">
+          <template slot-scope="scope">
+            <span class="health-status-entry" @click.stop="handleAiInfo(scope.row)">
+              <el-tooltip v-if="scope.row.latestAnalyzeTime" :content="formatHealthTooltip(scope.row)" placement="top">
+                <el-tag :type="resolveHealthLevelType(scope.row.healthLevel)" size="mini">
+                  {{ formatHealthLevel(scope.row.healthLevel) }}{{ formatHealthScore(scope.row.healthScore) }}
+                </el-tag>
+              </el-tooltip>
+              <el-tag v-else type="info" size="mini">未分析</el-tag>
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="项目类型" align="center">
           <template slot-scope="scope">
             <div v-if="scope.row.projectTypeName === '公开项目'">
@@ -402,6 +414,10 @@ export default {
       // this.$cache.session.setJSON("projectData", row) // 缓存当前项目的数据，在详情页会取出展示
       this.$router.push({ path: "/pmhub-project/my-project/info", query: { projectId: row.projectId } })
     },
+    handleAiInfo(row) {
+      this.currentRow = row
+      this.$router.push({ path: '/pmhub-project/my-project/info', query: { projectId: row.projectId, tab: 'ai' } })
+    },
     handleCollection(row) {
       this.loading = true
       if (row.collected) {
@@ -423,6 +439,41 @@ export default {
             this.loading = false
           })
       }
+    },
+    resolveHealthLevelType(level) {
+      if (level === 'HEALTHY') {
+        return 'success'
+      }
+      if (level === 'WARNING') {
+        return 'warning'
+      }
+      if (level === 'DANGER') {
+        return 'danger'
+      }
+      return 'info'
+    },
+    formatHealthLevel(level) {
+      if (level === 'HEALTHY') {
+        return '健康'
+      }
+      if (level === 'WARNING') {
+        return '预警'
+      }
+      if (level === 'DANGER') {
+        return '危险'
+      }
+      return '暂无'
+    },
+    formatHealthScore(score) {
+      if (score === null || score === undefined || score === '') {
+        return ''
+      }
+      return ` ${score}分`
+    },
+    formatHealthTooltip(row) {
+      const riskCount = row.riskCount === null || row.riskCount === undefined ? 0 : row.riskCount
+      const highRiskCount = row.highRiskCount === null || row.highRiskCount === undefined ? 0 : row.highRiskCount
+      return `最近分析时间：${row.latestAnalyzeTime}，风险 ${riskCount} 项，高风险 ${highRiskCount} 项`
     },
 
     /** pager-wrapper 模块 */
@@ -464,5 +515,9 @@ export default {
 .pager-wrapper {
   display: flex;
   justify-content: flex-end;
+}
+
+.health-status-entry {
+  cursor: pointer;
 }
 </style>

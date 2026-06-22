@@ -64,6 +64,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     private final IWfCopyService copyService;
     private final WfCopyMapper wfCopyMapper;
     private final WfTaskProcessMapper wfTaskProcessMapper;
+    private final WorkflowSystemService workflowSystemService;
 //    private final WfMaterialsScrappedProcessMapper wfMaterialsScrappedProcessMapper;
 
     @Autowired
@@ -345,13 +346,13 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 
         // TODO: 2024.04.25 删除oa模块暂时
 //        RocketMqUtils.cleanMessage(bo.getTaskId() + "_" + SecurityUtils.getUserId());
-//        OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(bo.getTaskId() + "_" + bo.getAssignee(), OAMessageStatusEnum.DEAL.getStatus(), wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getUserName())), "OAUtils.ALTER_MESSAGE_API");
+//        OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(bo.getTaskId() + "_" + bo.getAssignee(), OAMessageStatusEnum.DEAL.getStatus(), workflowSystemService.selectUserById(SecurityUtils.getUserId()).getUserName())), "OAUtils.ALTER_MESSAGE_API");
         LambdaQueryWrapper<WfTaskMessageDeal> qw = new LambdaQueryWrapper<>();
         qw.eq(WfTaskMessageDeal::getTaskId, bo.getTaskId()).eq(WfTaskMessageDeal::getAssignee, SecurityUtils.getUserId());
         wfTaskMessageDealMapper.delete(qw);
-        StringBuilder commentBuilder = new StringBuilder(wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getNickName())
+        StringBuilder commentBuilder = new StringBuilder(workflowSystemService.selectUserById(SecurityUtils.getUserId()).getNickName())
             .append("->");
-        SysUser user = wfCopyMapper.selectUserById(Long.parseLong(bo.getUserId()));
+        SysUser user = workflowSystemService.selectUserById(Long.parseLong(bo.getUserId()));
         if (ObjectUtil.isNotNull(user)) {
             commentBuilder.append(user.getNickName());
         } else {
@@ -391,9 +392,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             throw new ServiceException("获取任务失败！");
         }
         extracted(bo.getTaskId());
-        StringBuilder commentBuilder = new StringBuilder(wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getNickName())
+        StringBuilder commentBuilder = new StringBuilder(workflowSystemService.selectUserById(SecurityUtils.getUserId()).getNickName())
             .append("->");
-        SysUser user = wfCopyMapper.selectUserById(Long.parseLong(bo.getUserId()));
+        SysUser user = workflowSystemService.selectUserById(Long.parseLong(bo.getUserId()));
         if (ObjectUtil.isNotNull(user)) {
             commentBuilder.append(user.getNickName());
         } else {
@@ -420,7 +421,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     private void extracted(String taskId) {
         // TODO: 2024.04.25 删除oa模块暂时
 //        RocketMqUtils.cleanMessage(taskId + "_" + SecurityUtils.getUserId());
-//        OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(taskId + "_" + SecurityUtils.getUserId(), OAMessageStatusEnum.DEAL.getStatus(), wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getUserName())), OAUtils.ALTER_MESSAGE_API);
+//        OAUtils.restfulCall2(OAUtils.ALTER_MESSAGE_API, OAUtils.mapToStr(OAUtils.alterCustomMessageSingle(taskId + "_" + SecurityUtils.getUserId(), OAMessageStatusEnum.DEAL.getStatus(), workflowSystemService.selectUserById(SecurityUtils.getUserId()).getUserName())), OAUtils.ALTER_MESSAGE_API);
         LambdaQueryWrapper<WfTaskMessageDeal> qw = new LambdaQueryWrapper<>();
         qw.eq(WfTaskMessageDeal::getTaskId, taskId).eq(WfTaskMessageDeal::getAssignee, SecurityUtils.getUserId());
         wfTaskMessageDealMapper.delete(qw);
@@ -466,7 +467,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             // 更新审核状态
             wfTaskProcessMapper.updateProcessState2(wfTaskProcess.getExtraId());
             // 取消修改任务状态为未开始
-            wfTaskProcessMapper.updateTaskStatus2(wfTaskProcess.getExtraId());
+            workflowProjectService.resetTaskStatus(wfTaskProcess.getExtraId());
         }
         // 取消报废流程之后更新相应的审批申请
 //        LambdaQueryWrapper<WfMaterialsScrappedProcess> qw2 = new LambdaQueryWrapper<>();
@@ -546,7 +547,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             if (CollUtil.contains(nextUserTaskKeys, task.getTaskDefinitionKey())) {
                 // 添加撤回审批信息
                 taskService.setAssignee(task.getId(), TaskUtils.getUserId());
-                taskService.addComment(task.getId(), task.getProcessInstanceId(), FlowComment.REVOKE.getType(), wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getNickName() + "撤回流程审批");
+                taskService.addComment(task.getId(), task.getProcessInstanceId(), FlowComment.REVOKE.getType(), workflowSystemService.selectUserById(SecurityUtils.getUserId()).getNickName() + "撤回流程审批");
                 revokeExecutionIds.add(task.getExecutionId());
             }
         }
@@ -642,7 +643,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             String userIdStr = (String) variables.get(TaskConstants.PROCESS_INITIATOR);
             for (Task task : tasks) {
                 if (StrUtil.equals(task.getAssignee(), userIdStr)) {
-                    taskService.addComment(task.getId(), processInstance.getProcessInstanceId(), FlowComment.NORMAL.getType(), wfCopyMapper.selectUserById(SecurityUtils.getUserId()).getNickName() + "发起流程申请");
+                    taskService.addComment(task.getId(), processInstance.getProcessInstanceId(), FlowComment.NORMAL.getType(), workflowSystemService.selectUserById(SecurityUtils.getUserId()).getNickName() + "发起流程申请");
                     taskService.complete(task.getId(), variables);
                 }
             }
