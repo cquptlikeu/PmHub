@@ -2,6 +2,7 @@ package com.laigeoffer.pmhub.project.ai.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.laigeoffer.pmhub.project.ai.client.WorkflowRiskClient;
+import com.laigeoffer.pmhub.project.ai.constant.RiskType;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectAiAnalysisTask;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord;
@@ -98,6 +99,7 @@ public class ProjectAiQueryServiceImpl implements ProjectAiQueryService {
         return records.stream().map(record -> {
             ProjectRiskRecordVO vo = new ProjectRiskRecordVO();
             BeanUtils.copyProperties(record, vo);
+            vo.setRiskTypeName(RiskType.descByCode(record.getRiskType()));
             return vo;
         }).collect(Collectors.toList());
     }

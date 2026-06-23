@@ -546,13 +546,13 @@ export default {
       return '暂无'
     },
     formatRiskTypeCell(row) {
-      return this.formatRiskType(row.riskType)
+      return row.riskTypeName || this.formatRiskType(row.riskType)
     },
     formatRiskType(type) {
       const mapping = {
-        TASK_DELAY: '任务延期',
-        TASK_NEAR_DUE: '任务临期',
-        TASK_BLOCKED: '任务阻塞',
+        DELAYED_TASK: '任务延期',
+        NEAR_DUE: '任务临期',
+        BLOCKED_TASK: '任务阻塞',
         MEMBER_OVERLOAD: '成员过载',
         WORKFLOW_BLOCKED: '流程卡点'
       }

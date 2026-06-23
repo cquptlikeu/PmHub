@@ -16,6 +16,11 @@ public class ProjectRiskRecordVO {
 
     private String riskType;
 
+    /**
+     * 风险类型中文名称，由后端统一翻译，前端直接展示，避免前后端各维护一份字典。
+     */
+    private String riskTypeName;
+
     private String riskLevel;
 
     private String sourceType;

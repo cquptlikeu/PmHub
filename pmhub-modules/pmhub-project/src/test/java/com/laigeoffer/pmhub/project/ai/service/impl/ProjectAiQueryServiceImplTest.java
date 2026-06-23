@@ -4,6 +4,7 @@ import com.laigeoffer.pmhub.api.workflow.domain.vo.ProjectWorkflowRiskSummaryVO;
 import com.laigeoffer.pmhub.project.ai.client.WorkflowRiskClient;
 import com.laigeoffer.pmhub.project.ai.constant.AnalysisTaskStatus;
 import com.laigeoffer.pmhub.project.ai.constant.RiskLevel;
+import com.laigeoffer.pmhub.project.ai.constant.RiskType;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectAiAnalysisTask;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectHealthSnapshot;
 import com.laigeoffer.pmhub.project.ai.domain.ProjectRiskRecord;
@@ -63,6 +64,7 @@ class ProjectAiQueryServiceImplTest {
         ProjectRiskRecord record = new ProjectRiskRecord();
         record.setProjectId("project-1");
         record.setAnalysisTaskId("analysis-1");
+        record.setRiskType(RiskType.WORKFLOW_BLOCKED.getCode());
         record.setTitle("workflow blocked");
         when(projectRiskRecordMapper.selectByAnalysisTaskId("analysis-1"))
                 .thenReturn(Collections.singletonList(record));
@@ -71,6 +73,7 @@ class ProjectAiQueryServiceImplTest {
 
         assertEquals(1, records.size());
         assertEquals("analysis-1", records.get(0).getAnalysisTaskId());
+        assertEquals("流程卡点", records.get(0).getRiskTypeName());
         verify(projectRiskRecordMapper).selectByAnalysisTaskId("analysis-1");
         verify(projectRiskRecordMapper, never()).selectByProjectId("project-1");
     }

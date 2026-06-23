@@ -22,4 +22,19 @@ public enum RiskType {
     public String getDesc() {
         return desc;
     }
+
+    /**
+     * 根据风险类型码返回中文名称；未知码原样返回，避免前端硬编码翻译表导致前后端契约漂移。
+     */
+    public static String descByCode(String code) {
+        if (code == null) {
+            return null;
+        }
+        for (RiskType type : values()) {
+            if (type.code.equals(code)) {
+                return type.desc;
+            }
+        }
+        return code;
+    }
 }
